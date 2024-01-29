@@ -23,12 +23,12 @@ ATOM AbstractWindow::RegisterClass()
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = GetModuleHandle(NULL);
-	wcex.hIcon = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_GAME3D));
+	wcex.hIcon = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = AbstractWindow::ClassName();
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_GAME3D));
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON));
 
 	return ::RegisterClassEx(&wcex);
 }
@@ -98,14 +98,6 @@ LRESULT AbstractWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CHAR:
 		return OnChar(wParam, lParam);
 
-	case WM_DICE_P1_MSG:
-		OnDiceP1Msg();
-		return 0;
-
-	case WM_DICE_P2_MSG:
-		OnDiceP2Msg();
-		return 0;
-
 	case WM_TIMER:
 	{
 		switch (wParam)
@@ -122,8 +114,6 @@ LRESULT AbstractWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return OnTimer_Zoomin();
 		case IDT_TIMER_OUT:
 			return OnTimer_Zoomout();
-		case IDT_TIMER_ANIMATE:
-			return OnTimer_Animate();
 		}
 		return 0;
 	}
@@ -324,12 +314,9 @@ LRESULT AbstractWindow::OnKeyDown(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam)
 	{
-	case VK_F1:
-		return OnKeyDown_f1();
+	//case VK_F1:
 
-	case VK_RETURN:
-		return OnKeyDown_return();
-	break;
+	//case VK_RETURN:
 
 	case VK_HOME:       // Home 
 		break;
@@ -343,11 +330,11 @@ LRESULT AbstractWindow::OnKeyDown(WPARAM wParam, LPARAM lParam)
 	case VK_NEXT:       // Page Down 
 		break;
 
-	case VK_LEFT:       // Left arrow 
-		return OnKeyDown_left_arrow();
+	//case VK_LEFT:       // Left arrow 
+		
 
-	case VK_RIGHT:      // Right arrow
-		return OnKeyDown_right_arrow();
+	//case VK_RIGHT:      // Right arrow
+		
 
 	case VK_UP:         // Up arrow 
 		break;
@@ -380,8 +367,8 @@ LRESULT AbstractWindow::OnChar(WPARAM wParam, LPARAM lParam)
 		MessageBeep((UINT)-1);
 		break;
 
-	case VK_SPACE:
-		return OnChar_space();
+	//case VK_SPACE:
+		
 
 	default:
 		break;

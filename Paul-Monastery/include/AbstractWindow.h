@@ -4,20 +4,12 @@
 #include <BaseWindow.hpp>
 #include <GameTimer.h>
 
-#define WM_DICE_P1_MSG WM_USER + 1
-#define WM_DICE_P2_MSG WM_USER + 2
-
-#define TIMER_PERIOD 100
-#define TIMER_ANIMATION_PERIOD 15000
-
 #define IDT_TIMER_UP	1000
 #define IDT_TIMER_DOWN	1001
 #define IDT_TIMER_LEFT	1002
 #define IDT_TIMER_RIGHT 1003
 #define IDT_TIMER_IN	1004
 #define IDT_TIMER_OUT	1005
-
-#define IDT_TIMER_ANIMATE 1100
 
 class AbstractWindow : public BaseWindow<AbstractWindow>
 {
@@ -42,23 +34,12 @@ public:
 	virtual LRESULT OnKeyDown(WPARAM wParam, LPARAM lParam);
 	virtual LRESULT OnChar(WPARAM wParam, LPARAM lParam);
 	
-	virtual LRESULT OnKeyDown_return() = 0;
-	virtual LRESULT OnKeyDown_left_arrow() = 0;
-	virtual LRESULT OnKeyDown_right_arrow() = 0;
-	virtual LRESULT OnKeyDown_f1() = 0;
-	virtual LRESULT OnChar_space() = 0;
-
 	virtual LRESULT OnTimer_Up() = 0;
 	virtual LRESULT OnTimer_Down() = 0;
 	virtual LRESULT OnTimer_Left() = 0;
 	virtual LRESULT OnTimer_Right() = 0;
 	virtual LRESULT OnTimer_Zoomin() = 0;
 	virtual LRESULT OnTimer_Zoomout() = 0;
-
-	virtual LRESULT OnTimer_Animate() = 0;
-
-	virtual void OnDiceP1Msg() = 0;
-	virtual void OnDiceP2Msg() = 0;
 
 	bool isPaused() { return _paused; }
 
@@ -70,7 +51,7 @@ public:
 	void Update();
 
 protected:
-	static inline PCTSTR ClassName() { return _T("Game Window Class"); }
+	static inline PCTSTR ClassName() { return _T("Paul Monastery Class"); }
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	int _ClientWidth;
@@ -79,7 +60,7 @@ protected:
 	bool _paused = false;
 	GameTimer _game_timer;
 
-	std::wstring _text_message = L"Parlor-Board Game3DX";
+	std::wstring _text_message = L"Tour in Paul Monastery Damascus";
 
 	POINT _LastMousePos;
 

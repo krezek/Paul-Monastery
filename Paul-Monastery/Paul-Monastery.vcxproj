@@ -103,7 +103,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>Default</ConformanceMode>
       <AdditionalIncludeDirectories>.;include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -111,6 +111,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3dcompiler.lib;D3D12.lib;dxgi.lib;d2d1.lib;dwrite.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -120,7 +121,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>Default</ConformanceMode>
       <AdditionalIncludeDirectories>.;include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -130,10 +131,21 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3dcompiler.lib;D3D12.lib;dxgi.lib;d2d1.lib;dwrite.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AbstractWindow.cpp" />
+    <ClCompile Include="src\d3dUtil.cpp" />
+    <ClCompile Include="src\DDSTextureLoader.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\FrameResource.cpp" />
+    <ClCompile Include="src\GameTimer.cpp" />
+    <ClCompile Include="src\GraphicsWindow.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\MathHelper.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -141,9 +153,26 @@
     <ClCompile Include="src\WUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AbstractWindow.h" />
+    <ClInclude Include="include\BaseWindow.hpp" />
+    <ClInclude Include="include\d3dUtil.h" />
+    <ClInclude Include="include\d3dx12.h" />
+    <ClInclude Include="include\DDSTextureLoader.h" />
+    <ClInclude Include="include\FrameResource.h" />
+    <ClInclude Include="include\GameTimer.h" />
+    <ClInclude Include="include\GraphicsWindow.h" />
+    <ClInclude Include="include\MathHelper.h" />
+    <ClInclude Include="include\UploadBuffer.h" />
     <ClInclude Include="include\WUtil.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\platform.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,10 +2,10 @@
 #include "platform.h"
 
 
-//#include <MainWindow.h>
+#include <GraphicsWindow.h>
 #include <WUtil.h>
-//#include <GameTimer.h>
-//#include <d3dUtil.h>
+#include <GameTimer.h>
+#include <d3dUtil.h>
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -20,18 +20,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RedirectIOToConsole();
 #endif
 
-	/*if (!MainWindow::RegisterClass())
+	if (!GraphicsWindow::RegisterClass())
 	{
 		ShowError(_T("MainWindow::RegisterClass()"));
 		return -1;
 	}
 
-	MainWindow win;
+	GraphicsWindow win;
 
-	if (!win.Create(_T("Parlor-Board Game3DX"), 
+	if (!win.Create(_T("Paul Monastery"), 
 		WS_OVERLAPPEDWINDOW))
 	{
-		ShowError(_T("MainWindow::Create"));
+		ShowError(_T("GraphicsWindow::Create"));
 		return -1;
 	}
 
@@ -97,7 +97,5 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
-	return (int)msg.wParam;*/
-
-	return 0;
+	return (int)msg.wParam;
 }

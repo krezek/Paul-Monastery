@@ -4,12 +4,6 @@
 #include <MathHelper.h>
 #include <UploadBuffer.h>
 
-#define BONE_COUNT 130
-
-#define MONKEY_MESH_COUNT 5
-#define BIRD_MESH_COUNT 1
-#define DOG_MESH_COUNT 1
-
 struct ObjectConstants
 {
     DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
@@ -46,25 +40,11 @@ struct Vertex
     DirectX::XMFLOAT2 TexC;
 };
 
-struct SkinnedVertex
-{
-    DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT3 Normal;
-    DirectX::XMFLOAT2 TexC;
-    DirectX::XMFLOAT4 BoneWeights;
-    UINT BoneIndices[4];
-};
-
-struct SkinnedConstants
-{
-    DirectX::XMFLOAT4X4 BoneTransforms[BONE_COUNT];
-};
-
 struct FrameResource
 {
 public:
 
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT skinnedObjectCount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -74,7 +54,6 @@ public:
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
     std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
-    std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
 
     UINT64 Fence = 0;
 };
