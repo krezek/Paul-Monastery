@@ -87,8 +87,7 @@ protected:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
-	void BuildSkyGeometry();
-	void BuildFixedGeometry();
+	void BuildGeometry();
 	void BuildMaterials();
 	void BuildDescriptorHeaps();
 	void BuildPSOs();

@@ -9,6 +9,7 @@
 #include <DDSTextureLoader.h>
 #include <GeometryGenerator.h>
 #include <Sky.h>
+#include <Fixed.h>
 
 using namespace DirectX;
 
@@ -38,8 +39,7 @@ void GraphicsWindow::InitDirect3D()
 	LoadTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
-	BuildSkyGeometry();
-	BuildFixedGeometry();
+	BuildGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -315,67 +315,10 @@ void GraphicsWindow::BuildShadersAndInputLayout()
 }
 
 
-void GraphicsWindow::BuildSkyGeometry()
+void GraphicsWindow::BuildGeometry()
 {
 	Sky::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
-}
-
-void GraphicsWindow::BuildFixedGeometry()
-{
-	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData button = geoGen.CreateQuad(-1.0f, 1.0f, 2.0f, 2.0f, 0.0f);
-
-	size_t totalSize = button.Vertices.size();
-	std::vector<Vertex> vertices(totalSize);
-
-	UINT k = 0;
-	for (size_t i = 0; i < button.Vertices.size(); ++i, ++k)
-	{
-		auto& p = button.Vertices[i].Position;
-		vertices[k].Pos = p;
-		vertices[k].Normal = button.Vertices[i].Normal;
-		vertices[k].TexC = button.Vertices[i].TexC;
-	}
-
-	BoundingBox button_bounds;
-	BoundingBox::CreateFromPoints(button_bounds, button.Vertices.size(),
-		&vertices[0].Pos, sizeof(Vertex));
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-
-	std::vector<std::uint16_t> indices;
-	indices.insert(indices.end(), std::begin(button.GetIndices16()), std::end(button.GetIndices16()));
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "fixedGeo";
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
-		_CommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
-		_CommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry buttonSubmesh;
-	buttonSubmesh.IndexCount = (UINT)button.Indices32.size();
-	buttonSubmesh.StartIndexLocation = 0;
-	buttonSubmesh.BaseVertexLocation = 0;
-	buttonSubmesh.Bounds = button_bounds;
-
-	geo->DrawArgs["button"] = buttonSubmesh;
-
-	_Geometries[geo->Name] = std::move(geo);
+	Fixed::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 }
 
 void GraphicsWindow::BuildPSOs()
@@ -449,102 +392,7 @@ void GraphicsWindow::BuildFrameResources()
 void GraphicsWindow::BuildRenderItems()
 {
 	Sky::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Sky]);
-
-	auto bUpButtonRitem = std::make_unique<RenderItem>();
-	_upButton = bUpButtonRitem.get();
-	XMStoreFloat4x4(&bUpButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.45f, 0.28f, 0.0f));
-	bUpButtonRitem->ObjCBIndex = 1;
-	bUpButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bUpButtonRitem->Mat = _Materials["up0"].get();
-	bUpButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bUpButtonRitem->IndexCount = bUpButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bUpButtonRitem->StartIndexLocation = bUpButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bUpButtonRitem->BaseVertexLocation = bUpButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bUpButtonRitem->Bounds = bUpButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bUpButtonRitem.get());
-	_AllRitems.push_back(std::move(bUpButtonRitem));
-
-	auto bDownButtonRitem = std::make_unique<RenderItem>();
-	_downButton = bDownButtonRitem.get();
-	XMStoreFloat4x4(&bDownButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.45f, 0.2f, 0.0f));
-	bDownButtonRitem->ObjCBIndex = 2;
-	bDownButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bDownButtonRitem->Mat = _Materials["down0"].get();
-	bDownButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bDownButtonRitem->IndexCount = bDownButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bDownButtonRitem->StartIndexLocation = bDownButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bDownButtonRitem->BaseVertexLocation = bDownButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bDownButtonRitem->Bounds = bDownButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bDownButtonRitem.get());
-	_AllRitems.push_back(std::move(bDownButtonRitem));
-
-	auto bLeftButtonRitem = std::make_unique<RenderItem>();
-	_leftButton = bLeftButtonRitem.get();
-	XMStoreFloat4x4(&bLeftButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.4f, 0.24f, 0.0f));
-	bLeftButtonRitem->ObjCBIndex = 3;
-	bLeftButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bLeftButtonRitem->Mat = _Materials["left0"].get();
-	bLeftButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bLeftButtonRitem->IndexCount = bLeftButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bLeftButtonRitem->StartIndexLocation = bLeftButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bLeftButtonRitem->BaseVertexLocation = bLeftButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bLeftButtonRitem->Bounds = bLeftButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bLeftButtonRitem.get());
-	_AllRitems.push_back(std::move(bLeftButtonRitem));
-
-	auto bRightButtonRitem = std::make_unique<RenderItem>();
-	_rightButton = bRightButtonRitem.get();
-	XMStoreFloat4x4(&bRightButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.5f, 0.24f, 0.0f));
-	bRightButtonRitem->ObjCBIndex = 4;
-	bRightButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bRightButtonRitem->Mat = _Materials["right0"].get();
-	bRightButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bRightButtonRitem->IndexCount = bRightButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bRightButtonRitem->StartIndexLocation = bRightButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bRightButtonRitem->BaseVertexLocation = bRightButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bRightButtonRitem->Bounds = bRightButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bRightButtonRitem.get());
-	_AllRitems.push_back(std::move(bRightButtonRitem));
-
-	auto bZoominButtonRitem = std::make_unique<RenderItem>();
-	_zoominButton = bZoominButtonRitem.get();
-	XMStoreFloat4x4(&bZoominButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.55f, 0.28f, 0.0f));
-	bZoominButtonRitem->ObjCBIndex = 5;
-	bZoominButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bZoominButtonRitem->Mat = _Materials["zoomin0"].get();
-	bZoominButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bZoominButtonRitem->IndexCount = bZoominButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bZoominButtonRitem->StartIndexLocation = bZoominButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bZoominButtonRitem->BaseVertexLocation = bZoominButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bZoominButtonRitem->Bounds = bZoominButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bZoominButtonRitem.get());
-	_AllRitems.push_back(std::move(bZoominButtonRitem));
-
-	auto bZoomoutButtonRitem = std::make_unique<RenderItem>();
-	_zoomoutButton = bZoomoutButtonRitem.get();
-	XMStoreFloat4x4(&bZoomoutButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
-		DirectX::XMMatrixTranslation(0.55f, 0.2f, 0.0f));
-	bZoomoutButtonRitem->ObjCBIndex = 6;
-	bZoomoutButtonRitem->Geo = _Geometries["fixedGeo"].get();
-	bZoomoutButtonRitem->Mat = _Materials["zoomout0"].get();
-	bZoomoutButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bZoomoutButtonRitem->IndexCount = bZoomoutButtonRitem->Geo->DrawArgs["button"].IndexCount;
-	bZoomoutButtonRitem->StartIndexLocation = bZoomoutButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
-	bZoomoutButtonRitem->BaseVertexLocation = bZoomoutButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
-	bZoomoutButtonRitem->Bounds = bZoomoutButtonRitem->Geo->DrawArgs["button"].Bounds;
-
-	_RitemLayer[(int)RenderLayer::Fixed].push_back(bZoomoutButtonRitem.get());
-	_AllRitems.push_back(std::move(bZoomoutButtonRitem));
+	Fixed::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Fixed]);
 }
 
 void GraphicsWindow::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

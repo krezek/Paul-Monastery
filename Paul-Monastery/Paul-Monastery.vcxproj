@@ -141,6 +141,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\Fixed.cpp" />
     <ClCompile Include="src\FrameResource.cpp" />
     <ClCompile Include="src\GameTimer.cpp" />
     <ClCompile Include="src\GeometryGenerator.cpp" />
@@ -160,6 +161,7 @@
     <ClInclude Include="include\d3dUtil.h" />
     <ClInclude Include="include\d3dx12.h" />
     <ClInclude Include="include\DDSTextureLoader.h" />
+    <ClInclude Include="include\Fixed.h" />
     <ClInclude Include="include\FrameResource.h" />
     <ClInclude Include="include\GameTimer.h" />
     <ClInclude Include="include\GeometryGenerator.h" />
