@@ -33,7 +33,7 @@ struct RenderItem
 
 enum class RenderLayer : int
 {
-	Opaque = 0,
+	Sky = 0,
 	Count
 };
 
@@ -116,7 +116,7 @@ protected:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
-	void BuildBoardGeometry();
+	void BuildSkyGeometry();
 	void BuildMaterials();
 	void BuildDescriptorHeaps();
 	void BuildPSOs();

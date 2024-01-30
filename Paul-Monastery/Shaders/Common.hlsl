@@ -13,7 +13,7 @@
 #include "LightingUtil.hlsl"
 
 Texture2D    gDiffuseMap : register(t0);
-TextureCube gCubeMap : register(t1);
+TextureCube  gCubeMap : register(t1);
 
 
 SamplerState gsamPointWrap        : register(s0);
@@ -59,21 +59,11 @@ cbuffer cbMaterial : register(b2)
 	float4x4 gMatTransform;
 };
 
-cbuffer cbSkinned : register(b3)
-{
-    float4x4 gBoneTransforms[130];
-};
-
-
 struct VertexIn
 {
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
-#ifdef SKINNED
-    float4 BoneWeights : WEIGHTS;
-    uint4 BoneIndices : BONEINDICES;
-#endif
 };
 
 struct VertexOut

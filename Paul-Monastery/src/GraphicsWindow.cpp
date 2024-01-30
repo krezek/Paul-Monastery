@@ -7,6 +7,7 @@
 #include <d3dUtil.h>
 #include <FrameResource.h>
 #include <DDSTextureLoader.h>
+#include <GeometryGenerator.h>
 
 using namespace DirectX;
 
@@ -36,7 +37,7 @@ void GraphicsWindow::InitDirect3D()
 	LoadTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
-	BuildBoardGeometry();
+	BuildSkyGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -56,7 +57,7 @@ void GraphicsWindow::Draw()
 
 	ThrowIfFailed(cmdListAlloc->Reset());
 
-	ThrowIfFailed(_CommandList->Reset(cmdListAlloc.Get(), _PSOs["opaque"].Get()));
+	ThrowIfFailed(_CommandList->Reset(cmdListAlloc.Get(), _PSOs["sky"].Get()));
 
 	_CommandList->RSSetViewports(1, &_ScreenViewport);
 	_CommandList->RSSetScissorRects(1, &_ScissorRect);
@@ -77,8 +78,12 @@ void GraphicsWindow::Draw()
 	auto passCB = _CurrFrameResource->PassCB->Resource();
 	_CommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	_CommandList->SetPipelineState(_PSOs["opaque"].Get());
-	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Opaque]);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	skyTexDescriptor.Offset(0, _CbvSrvUavDescriptorSize);
+	_CommandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
+
+	_CommandList->SetPipelineState(_PSOs["sky"].Get());
+	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Sky]);
 
 	_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -235,18 +240,17 @@ void GraphicsWindow::BuildRootSignature()
 		1,
 		1);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
 
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
 	slotRootParameter[3].InitAsConstantBufferView(2);
-	slotRootParameter[4].InitAsConstantBufferView(3);
-	slotRootParameter[5].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = GetStaticSamplers();
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -270,11 +274,21 @@ void GraphicsWindow::BuildRootSignature()
 
 void GraphicsWindow::BuildShadersAndInputLayout()
 {
+	_Shaders["skyVS"] = d3dUtil::LoadBinary(SHADER_PATH L"sky_vs.cso");
+	//d3dUtil::CompileShader(SHADER_PATH L"Sky.hlsl", nullptr, "VS", "vs_5_1");
+	_Shaders["skyPS"] = d3dUtil::LoadBinary(SHADER_PATH L"sky_ps.cso");
+	//d3dUtil::CompileShader(SHADER_PATH L"Sky.hlsl", nullptr, "PS", "ps_5_1");
+	
+	/*_Shaders["fixedVS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_vs.cso");
+	//d3dUtil::CompileShader(SHADER_PATH L"Fixed.hlsl", nullptr, "VS", "vs_5_1");
+	_Shaders["fixedPS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_ps.cso");
+	//d3dUtil::CompileShader(SHADER_PATH L"Fixed.hlsl", nullptr, "PS", "ps_5_1");
+
 	_Shaders["opaqueVS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_vs.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "VS", "vs_5_1");
 	_Shaders["opaquePS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_ps.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "PS", "ps_5_1");
-
+		*/
 	_InputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -284,43 +298,98 @@ void GraphicsWindow::BuildShadersAndInputLayout()
 }
 
 
-void GraphicsWindow::BuildBoardGeometry()
+void GraphicsWindow::BuildSkyGeometry()
 {
+	GeometryGenerator geoGen;
+	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.2f, 50, 50);
 	
+	size_t totalSize = sphere.Vertices.size();
+	std::vector<Vertex> vertices(totalSize);
+
+	UINT k = 0;
+	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
+	{
+		auto& p = sphere.Vertices[i].Position;
+		vertices[k].Pos = p;
+		vertices[k].Normal = sphere.Vertices[i].Normal;
+		vertices[k].TexC = sphere.Vertices[i].TexC;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "skyGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
+		_CommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
+		_CommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry sphereSubmesh;
+	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
+	sphereSubmesh.StartIndexLocation = 0;
+	sphereSubmesh.BaseVertexLocation = 0;
+	
+	geo->DrawArgs["sphere"] = sphereSubmesh;
+	
+	_Geometries[geo->Name] = std::move(geo);
 }
 
 void GraphicsWindow::BuildPSOs()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	psoDesc.InputLayout = { _InputLayout.data(), (UINT)_InputLayout.size() };
+	psoDesc.pRootSignature = _RootSignature.Get();
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	//psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = _BackBufferFormat;
+	psoDesc.SampleDesc.Count = _4xMsaaState ? 4 : 1;
+	psoDesc.SampleDesc.Quality = _4xMsaaState ? (_4xMsaaQuality - 1) : 0;
+	psoDesc.DSVFormat = _DepthStencilFormat;
 
 	//
 	// PSO for opaque objects.
 	//
-	ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	opaquePsoDesc.InputLayout = { _InputLayout.data(), (UINT)_InputLayout.size() };
-	opaquePsoDesc.pRootSignature = _RootSignature.Get();
-	opaquePsoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc; 
+	skyPsoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(_Shaders["opaqueVS"]->GetBufferPointer()),
-		_Shaders["opaqueVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(_Shaders["skyVS"]->GetBufferPointer()),
+		_Shaders["skyVS"]->GetBufferSize()
 	};
-	opaquePsoDesc.PS =
+
+	skyPsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(_Shaders["opaquePS"]->GetBufferPointer()),
-		_Shaders["opaquePS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(_Shaders["skyPS"]->GetBufferPointer()),
+		_Shaders["skyPS"]->GetBufferSize()
 	};
-	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	//opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.SampleMask = UINT_MAX;
-	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	opaquePsoDesc.NumRenderTargets = 1;
-	opaquePsoDesc.RTVFormats[0] = _BackBufferFormat;
-	opaquePsoDesc.SampleDesc.Count = _4xMsaaState ? 4 : 1;
-	opaquePsoDesc.SampleDesc.Quality = _4xMsaaState ? (_4xMsaaQuality - 1) : 0;
-	opaquePsoDesc.DSVFormat = _DepthStencilFormat;
-	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&_PSOs["opaque"])));
+	
+	skyPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	skyPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&_PSOs["sky"])));
 }
 
 void GraphicsWindow::BuildFrameResources()
@@ -334,6 +403,18 @@ void GraphicsWindow::BuildFrameResources()
 
 void GraphicsWindow::BuildRenderItems()
 {
+	auto skyRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&skyRitem->World, DirectX::XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
+	skyRitem->ObjCBIndex = 0;
+	skyRitem->Geo = _Geometries["skyGeo"].get();
+	skyRitem->Mat = _Materials["sky0"].get();
+	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skyRitem->IndexCount = skyRitem->Geo->DrawArgs["sphere"].IndexCount;
+	skyRitem->StartIndexLocation = skyRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+	skyRitem->BaseVertexLocation = skyRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+	_RitemLayer[(int)RenderLayer::Sky].push_back(skyRitem.get());
+	_AllRitems.push_back(std::move(skyRitem));
 }
 
 void GraphicsWindow::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

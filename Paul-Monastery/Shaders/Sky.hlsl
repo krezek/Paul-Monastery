@@ -3,7 +3,7 @@
 
 VertexOut VS(VertexIn vin)
 {
-    VertexOut vout;
+    VertexOut vout = (VertexOut)0.0f;
 
 	// Use local vertex position as cubemap lookup vector.
     vout.PosW = vin.PosL;
