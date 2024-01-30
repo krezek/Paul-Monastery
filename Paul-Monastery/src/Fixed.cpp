@@ -7,6 +7,14 @@
 #include <RenderItem.h>
 #include <Fixed.h>
 
+RenderItem* Fixed::_newButton = nullptr;
+RenderItem* Fixed::_upButton = nullptr;
+RenderItem* Fixed::_downButton = nullptr;
+RenderItem* Fixed::_leftButton = nullptr;
+RenderItem* Fixed::_rightButton = nullptr;
+RenderItem* Fixed::_zoominButton = nullptr;
+RenderItem* Fixed::_zoomoutButton = nullptr;
+
 void Fixed::BuildGeometry(ID3D12Device* devicePtr, 
 	ID3D12GraphicsCommandList* commandListPtr, 
 	std::unordered_map<std::string, 
@@ -75,7 +83,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	std::vector<RenderItem*>& fixedRenderItems)
 {
 	auto bUpButtonRitem = std::make_unique<RenderItem>();
-	//_upButton = bUpButtonRitem.get();
+	_upButton = bUpButtonRitem.get();
 	XMStoreFloat4x4(&bUpButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.45f, 0.28f, 0.0f));
 	bUpButtonRitem->ObjCBIndex = 1;
@@ -91,7 +99,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	allRitems.push_back(std::move(bUpButtonRitem));
 
 	auto bDownButtonRitem = std::make_unique<RenderItem>();
-	//_downButton = bDownButtonRitem.get();
+	_downButton = bDownButtonRitem.get();
 	XMStoreFloat4x4(&bDownButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.45f, 0.2f, 0.0f));
 	bDownButtonRitem->ObjCBIndex = 2;
@@ -107,7 +115,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	allRitems.push_back(std::move(bDownButtonRitem));
 
 	auto bLeftButtonRitem = std::make_unique<RenderItem>();
-	//_leftButton = bLeftButtonRitem.get();
+	_leftButton = bLeftButtonRitem.get();
 	XMStoreFloat4x4(&bLeftButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.4f, 0.24f, 0.0f));
 	bLeftButtonRitem->ObjCBIndex = 3;
@@ -123,7 +131,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	allRitems.push_back(std::move(bLeftButtonRitem));
 
 	auto bRightButtonRitem = std::make_unique<RenderItem>();
-	//_rightButton = bRightButtonRitem.get();
+	_rightButton = bRightButtonRitem.get();
 	XMStoreFloat4x4(&bRightButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.5f, 0.24f, 0.0f));
 	bRightButtonRitem->ObjCBIndex = 4;
@@ -139,7 +147,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	allRitems.push_back(std::move(bRightButtonRitem));
 
 	auto bZoominButtonRitem = std::make_unique<RenderItem>();
-	//_zoominButton = bZoominButtonRitem.get();
+	_zoominButton = bZoominButtonRitem.get();
 	XMStoreFloat4x4(&bZoominButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.55f, 0.28f, 0.0f));
 	bZoominButtonRitem->ObjCBIndex = 5;
@@ -155,7 +163,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	allRitems.push_back(std::move(bZoominButtonRitem));
 
 	auto bZoomoutButtonRitem = std::make_unique<RenderItem>();
-	//_zoomoutButton = bZoomoutButtonRitem.get();
+	_zoomoutButton = bZoomoutButtonRitem.get();
 	XMStoreFloat4x4(&bZoomoutButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.55f, 0.2f, 0.0f));
 	bZoomoutButtonRitem->ObjCBIndex = 6;

@@ -69,14 +69,6 @@ protected:
 	float _Phi = DirectX::XM_PIDIV2 - 0.5f;
 	float _Radius = 15.0f;
 
-	RenderItem* _newButton = nullptr;
-	RenderItem* _upButton = nullptr;
-	RenderItem* _downButton = nullptr;
-	RenderItem* _leftButton = nullptr;
-	RenderItem* _rightButton = nullptr;
-	RenderItem* _zoominButton = nullptr;
-	RenderItem* _zoomoutButton = nullptr;
-
 protected:
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateFixedCamera(const GameTimer& gt);

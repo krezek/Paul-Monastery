@@ -30,6 +30,7 @@ enum class RenderLayer : int
 {
 	Sky = 0,
 	Fixed,
+	Opaque,
 	Count
 };
 

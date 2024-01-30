@@ -10,6 +10,7 @@
 #include <GeometryGenerator.h>
 #include <Sky.h>
 #include <Fixed.h>
+#include <Monastery.h>
 
 using namespace DirectX;
 
@@ -89,6 +90,9 @@ void GraphicsWindow::Draw()
 
 	_CommandList->SetPipelineState(_PSOs["fixed"].Get());
 	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Fixed]);
+
+	_CommandList->SetPipelineState(_PSOs["opaque"].Get());
+	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Opaque]);
 
 	_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -211,23 +215,29 @@ void GraphicsWindow::LoadTextures()
 	std::vector<std::string> texNames =
 	{
 		"SkyTex",
+
 		"upTex",
 		"downTex",
 		"leftTex",
 		"rightTex",
 		"zoominTex",
-		"zoomoutTex"
+		"zoomoutTex",
+
+		"groundTex"
 	};
 
 	std::vector<std::wstring> texFilenames =
 	{
 		TEXTURE_PATH L"Sky.dds",
+
 		TEXTURE_PATH L"up.dds",
 		TEXTURE_PATH L"down.dds",
 		TEXTURE_PATH L"left.dds",
 		TEXTURE_PATH L"right.dds",
 		TEXTURE_PATH L"zoomin.dds",
-		TEXTURE_PATH L"zoomout.dds"
+		TEXTURE_PATH L"zoomout.dds",
+
+		TEXTURE_PATH L"ground.dds"
 	};
 
 	for (int i = 0; i < (int)texNames.size(); ++i)
@@ -301,11 +311,11 @@ void GraphicsWindow::BuildShadersAndInputLayout()
 	_Shaders["fixedPS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_ps.cso");
 	//d3dUtil::CompileShader(SHADER_PATH L"Fixed.hlsl", nullptr, "PS", "ps_5_1");
 
-	/*_Shaders["opaqueVS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_vs.cso");
+	_Shaders["opaqueVS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_vs.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "VS", "vs_5_1");
 	_Shaders["opaquePS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_ps.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "PS", "ps_5_1");
-		*/
+
 	_InputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -319,6 +329,7 @@ void GraphicsWindow::BuildGeometry()
 {
 	Sky::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 	Fixed::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
+	Monastery::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 }
 
 void GraphicsWindow::BuildPSOs()
@@ -378,6 +389,24 @@ void GraphicsWindow::BuildPSOs()
 	};
 
 	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&fixedPsoDesc, IID_PPV_ARGS(&_PSOs["fixed"])));
+
+	//
+	// PSO for Opaque objects.
+	//
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc = psoDesc;
+	opaquePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(_Shaders["opaqueVS"]->GetBufferPointer()),
+		_Shaders["opaqueVS"]->GetBufferSize()
+	};
+
+	opaquePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(_Shaders["opaquePS"]->GetBufferPointer()),
+		_Shaders["opaquePS"]->GetBufferSize()
+	};
+
+	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&_PSOs["opaque"])));
 }
 
 void GraphicsWindow::BuildFrameResources()
@@ -393,6 +422,7 @@ void GraphicsWindow::BuildRenderItems()
 {
 	Sky::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Sky]);
 	Fixed::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Fixed]);
+	Monastery::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Opaque]);
 }
 
 void GraphicsWindow::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -533,7 +563,7 @@ void GraphicsWindow::UpdateMainPassCB(const GameTimer& gt)
 void GraphicsWindow::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 7;
+	srvHeapDesc.NumDescriptors = 8;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&_SrvDescriptorHeap)));
@@ -549,7 +579,9 @@ void GraphicsWindow::BuildDescriptorHeaps()
 		_Textures["leftTex"]->Resource,
 		_Textures["rightTex"]->Resource,
 		_Textures["zoominTex"]->Resource,
-		_Textures["zoomoutTex"]->Resource
+		_Textures["zoomoutTex"]->Resource,
+
+		_Textures["groundTex"]->Resource
 	};
 	
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -635,14 +667,24 @@ void GraphicsWindow::BuildMaterials()
 	zoomout0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	zoomout0->Roughness = 0.3f;
 
+	auto ground0 = std::make_unique<Material>();
+	ground0->Name = "ground0";
+	ground0->MatCBIndex = 7;
+	ground0->DiffuseSrvHeapIndex = 7;
+	ground0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	ground0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	ground0->Roughness = 0.3f;
 	
 	_Materials["sky0"] = std::move(sky0);
+
 	_Materials["up0"] = std::move(up0);
 	_Materials["down0"] = std::move(down0);
 	_Materials["left0"] = std::move(left0);
 	_Materials["right0"] = std::move(right0);
 	_Materials["zoomin0"] = std::move(zoomin0);
 	_Materials["zoomout0"] = std::move(zoomout0);
+
+	_Materials["ground0"] = std::move(ground0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GraphicsWindow::GetStaticSamplers()

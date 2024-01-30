@@ -148,6 +148,7 @@
     <ClCompile Include="src\GraphicsWindow.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\MathHelper.cpp" />
+    <ClCompile Include="src\Monastery.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -167,6 +168,7 @@
     <ClInclude Include="include\GeometryGenerator.h" />
     <ClInclude Include="include\GraphicsWindow.h" />
     <ClInclude Include="include\MathHelper.h" />
+    <ClInclude Include="include\Monastery.h" />
     <ClInclude Include="include\RenderItem.h" />
     <ClInclude Include="include\Sky.h" />
     <ClInclude Include="include\UploadBuffer.h" />

@@ -1,11 +1,11 @@
-#ifndef _FIXED_H_
-#define _FIXED_H_
+#ifndef _MONASTERY_H_
+#define _MONASTERY_H_
 
-class Fixed
+class Monastery
 {
 public:
-	Fixed() = delete;
-	~Fixed() = delete;
+	Monastery() = delete;
+	~Monastery() = delete;
 
 	static void BuildGeometry(ID3D12Device* devicePtr,
 		ID3D12GraphicsCommandList* commandListPtr,
@@ -14,16 +14,8 @@ public:
 	static void BuildRenderItems(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& geometries,
 		std::unordered_map<std::string, std::unique_ptr<Material>>& materials,
 		std::vector<std::unique_ptr<RenderItem>>& allRitems,
-		std::vector<RenderItem*>& fixedRenderItems);
-
-	static RenderItem* _newButton;
-	static RenderItem* _upButton;
-	static RenderItem* _downButton;
-	static RenderItem* _leftButton;
-	static RenderItem* _rightButton;
-	static RenderItem* _zoominButton;
-	static RenderItem* _zoomoutButton;
+		std::vector<RenderItem*>& opaqueRenderItems);
 };
 
 
-#endif /* _FIXED_H_ */
+#endif /* _MONASTERY_H_ */
