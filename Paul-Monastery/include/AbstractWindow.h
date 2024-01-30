@@ -4,6 +4,8 @@
 #include <BaseWindow.hpp>
 #include <GameTimer.h>
 
+#define TIMER_PERIOD 100
+
 #define IDT_TIMER_UP	1000
 #define IDT_TIMER_DOWN	1001
 #define IDT_TIMER_LEFT	1002

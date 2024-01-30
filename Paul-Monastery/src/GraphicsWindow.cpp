@@ -154,6 +154,7 @@ LRESULT GraphicsWindow::OnMouseDown(WPARAM btnState, int x, int y)
 	}
 	else
 	{
+		PickFixed(x, y);
 	}
 
 	return 0;
@@ -782,4 +783,68 @@ LRESULT GraphicsWindow::OnTimer_Zoomout()
 
 	_Radius = MathHelper::Clamp(_Radius, 5.0f, 150.0f);
 	return 0;
+}
+
+void GraphicsWindow::PickFixed(int sx, int sy)
+{
+	for (auto ri : _RitemLayer[(int)RenderLayer::Fixed])
+	{
+		auto geo = ri->Geo;
+
+		XMFLOAT4X4 P = _Proj;
+
+		float vx = (+2.0f * sx / _ClientWidth - 1.0f) / P(0, 0);
+		float vy = (-2.0f * sy / _ClientHeight + 1.0f) / P(1, 1);
+
+		XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
+
+		XMMATRIX V = XMLoadFloat4x4(&_FixedView);
+		XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(V), V);
+
+		XMMATRIX W = XMLoadFloat4x4(&ri->World);
+		XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
+
+		XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
+
+		rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
+		rayDir = XMVector3TransformNormal(rayDir, toLocal);
+
+		rayDir = XMVector3Normalize(rayDir);
+
+		float tmin = 0.0f;
+		if (ri->Bounds.Intersects(rayOrigin, rayDir, tmin))
+		{
+			if (ri == Fixed::_upButton)
+			{
+				OnTimer_Up();
+				SetTimer(Window(), IDT_TIMER_UP, TIMER_PERIOD, NULL);
+			}
+			else if (ri == Fixed::_downButton)
+			{
+				OnTimer_Down();
+				SetTimer(Window(), IDT_TIMER_DOWN, TIMER_PERIOD, NULL);
+			}
+			else if (ri == Fixed::_leftButton)
+			{
+				OnTimer_Left();
+				SetTimer(Window(), IDT_TIMER_LEFT, TIMER_PERIOD, NULL);
+			}
+			else if (ri == Fixed::_rightButton)
+			{
+				OnTimer_Right();
+				SetTimer(Window(), IDT_TIMER_RIGHT, TIMER_PERIOD, NULL);
+			}
+			else if (ri == Fixed::_zoominButton)
+			{
+				OnTimer_Zoomin();
+				SetTimer(Window(), IDT_TIMER_IN, TIMER_PERIOD, NULL);
+			}
+			else if (ri == Fixed::_zoomoutButton)
+			{
+				OnTimer_Zoomout();
+				SetTimer(Window(), IDT_TIMER_OUT, TIMER_PERIOD, NULL);
+			}
+		}
+	}
 }
