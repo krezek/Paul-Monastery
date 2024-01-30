@@ -151,6 +151,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\Sky.cpp" />
     <ClCompile Include="src\WUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +165,8 @@
     <ClInclude Include="include\GeometryGenerator.h" />
     <ClInclude Include="include\GraphicsWindow.h" />
     <ClInclude Include="include\MathHelper.h" />
+    <ClInclude Include="include\RenderItem.h" />
+    <ClInclude Include="include\Sky.h" />
     <ClInclude Include="include\UploadBuffer.h" />
     <ClInclude Include="include\WUtil.h" />
     <ClInclude Include="resource.h" />

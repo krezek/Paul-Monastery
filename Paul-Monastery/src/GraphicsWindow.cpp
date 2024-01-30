@@ -8,6 +8,7 @@
 #include <FrameResource.h>
 #include <DDSTextureLoader.h>
 #include <GeometryGenerator.h>
+#include <Sky.h>
 
 using namespace DirectX;
 
@@ -316,55 +317,7 @@ void GraphicsWindow::BuildShadersAndInputLayout()
 
 void GraphicsWindow::BuildSkyGeometry()
 {
-	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.2f, 50, 50);
-	
-	size_t totalSize = sphere.Vertices.size();
-	std::vector<Vertex> vertices(totalSize);
-
-	UINT k = 0;
-	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
-	{
-		auto& p = sphere.Vertices[i].Position;
-		vertices[k].Pos = p;
-		vertices[k].Normal = sphere.Vertices[i].Normal;
-		vertices[k].TexC = sphere.Vertices[i].TexC;
-	}
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-
-	std::vector<std::uint16_t> indices;
-	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "skyGeo";
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
-		_CommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
-		_CommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry sphereSubmesh;
-	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
-	sphereSubmesh.StartIndexLocation = 0;
-	sphereSubmesh.BaseVertexLocation = 0;
-	
-	geo->DrawArgs["sphere"] = sphereSubmesh;
-	
-	_Geometries[geo->Name] = std::move(geo);
+	Sky::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 }
 
 void GraphicsWindow::BuildFixedGeometry()
@@ -495,18 +448,7 @@ void GraphicsWindow::BuildFrameResources()
 
 void GraphicsWindow::BuildRenderItems()
 {
-	auto skyRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&skyRitem->World, DirectX::XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
-	skyRitem->ObjCBIndex = 0;
-	skyRitem->Geo = _Geometries["skyGeo"].get();
-	skyRitem->Mat = _Materials["sky0"].get();
-	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skyRitem->IndexCount = skyRitem->Geo->DrawArgs["sphere"].IndexCount;
-	skyRitem->StartIndexLocation = skyRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-	skyRitem->BaseVertexLocation = skyRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-
-	_RitemLayer[(int)RenderLayer::Sky].push_back(skyRitem.get());
-	_AllRitems.push_back(std::move(skyRitem));
+	Sky::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Sky]);
 
 	auto bUpButtonRitem = std::make_unique<RenderItem>();
 	_upButton = bUpButtonRitem.get();
