@@ -198,15 +198,27 @@ LRESULT GraphicsWindow::OnMouseMove(WPARAM btnState, int x, int y)
 
 void GraphicsWindow::LoadTextures()
 {
-	auto tileTex = std::make_unique<Texture>();
-	tileTex->Name = "tileTex";
-	tileTex->Filename = TEXTURE_PATH L"tile.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(_d3dDevice.Get(),
-		_CommandList.Get(), tileTex->Filename.c_str(),
-		tileTex->Resource, tileTex->UploadHeap));
+	std::vector<std::string> texNames =
+	{
+		"SkyTex"
+	};
 
+	std::vector<std::wstring> texFilenames =
+	{
+		TEXTURE_PATH L"Sky.dds"
+	};
 
-	_Textures[tileTex->Name] = std::move(tileTex);
+	for (int i = 0; i < (int)texNames.size(); ++i)
+	{
+		auto tex = std::make_unique<Texture>();
+		tex->Name = texNames[i];
+		tex->Filename = texFilenames[i];
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(_d3dDevice.Get(),
+			_CommandList.Get(), tex->Filename.c_str(),
+			tex->Resource, tex->UploadHeap));
+
+		_Textures[tex->Name] = std::move(tex);
+	}
 }
 
 void GraphicsWindow::BuildRootSignature()
@@ -469,30 +481,47 @@ void GraphicsWindow::BuildDescriptorHeaps()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto tileTex = _Textures["tileTex"]->Resource;
+	auto skyTex = _Textures["SkyTex"]->Resource; 
+	
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> tex2DList =
+	{
+		//_Textures[""]->Resource
+	};
 	
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = tileTex->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE; 
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = tileTex->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	_d3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
+
+	srvDesc.Format = skyTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = skyTex->GetDesc().MipLevels;
+	_d3dDevice->CreateShaderResourceView(skyTex.Get(), &srvDesc, hDescriptor);
+
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	for (UINT i = 0; i < (UINT)tex2DList.size(); ++i)
+	{
+		srvDesc.Format = tex2DList[i]->GetDesc().Format;
+		srvDesc.Texture2D.MipLevels = tex2DList[i]->GetDesc().MipLevels;
+		_d3dDevice->CreateShaderResourceView(tex2DList[i].Get(), &srvDesc, hDescriptor);
+
+		// next descriptor
+		hDescriptor.Offset(1, _CbvSrvUavDescriptorSize);
+	}
 }
 
 void GraphicsWindow::BuildMaterials()
 {
-	auto tile0 = std::make_unique<Material>();
-	tile0->Name = "tile0";
-	tile0->MatCBIndex = 0;
-	tile0->DiffuseSrvHeapIndex = 0;
-	tile0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	tile0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
-	tile0->Roughness = 0.3f;
+	auto sky0 = std::make_unique<Material>();
+	sky0->Name = "sky0";
+	sky0->MatCBIndex = 0;
+	sky0->DiffuseSrvHeapIndex = 0;
+	sky0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	sky0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	sky0->Roughness = 0.3f;
 
 	
-	_Materials["tile0"] = std::move(tile0);
+	_Materials["sky0"] = std::move(sky0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GraphicsWindow::GetStaticSamplers()
