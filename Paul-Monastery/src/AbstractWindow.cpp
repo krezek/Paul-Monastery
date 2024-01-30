@@ -201,7 +201,7 @@ LRESULT AbstractWindow::OnResize()
 		ThrowIfFailed(_d3d11On12Device->CreateWrappedResource(
 			_SwapChainBuffer[i].Get(),
 			&d3d11Flags,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_COMMON,
 			D3D12_RESOURCE_STATE_PRESENT,
 			IID_PPV_ARGS(&_wrappedBackBuffers[i])
 		));
