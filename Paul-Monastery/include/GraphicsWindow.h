@@ -34,6 +34,7 @@ struct RenderItem
 enum class RenderLayer : int
 {
 	Sky = 0,
+	Fixed,
 	Count
 };
 
@@ -117,6 +118,7 @@ protected:
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildSkyGeometry();
+	void BuildFixedGeometry();
 	void BuildMaterials();
 	void BuildDescriptorHeaps();
 	void BuildPSOs();

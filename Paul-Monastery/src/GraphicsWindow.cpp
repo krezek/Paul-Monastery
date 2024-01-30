@@ -38,6 +38,7 @@ void GraphicsWindow::InitDirect3D()
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildSkyGeometry();
+	BuildFixedGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -84,6 +85,9 @@ void GraphicsWindow::Draw()
 
 	_CommandList->SetPipelineState(_PSOs["sky"].Get());
 	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Sky]);
+
+	_CommandList->SetPipelineState(_PSOs["fixed"].Get());
+	DrawRenderItems(_CommandList.Get(), _RitemLayer[(int)RenderLayer::Fixed]);
 
 	_CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -205,12 +209,24 @@ void GraphicsWindow::LoadTextures()
 {
 	std::vector<std::string> texNames =
 	{
-		"SkyTex"
+		"SkyTex",
+		"upTex",
+		"downTex",
+		"leftTex",
+		"rightTex",
+		"zoominTex",
+		"zoomoutTex"
 	};
 
 	std::vector<std::wstring> texFilenames =
 	{
-		TEXTURE_PATH L"Sky.dds"
+		TEXTURE_PATH L"Sky.dds",
+		TEXTURE_PATH L"up.dds",
+		TEXTURE_PATH L"down.dds",
+		TEXTURE_PATH L"left.dds",
+		TEXTURE_PATH L"right.dds",
+		TEXTURE_PATH L"zoomin.dds",
+		TEXTURE_PATH L"zoomout.dds"
 	};
 
 	for (int i = 0; i < (int)texNames.size(); ++i)
@@ -279,12 +295,12 @@ void GraphicsWindow::BuildShadersAndInputLayout()
 	_Shaders["skyPS"] = d3dUtil::LoadBinary(SHADER_PATH L"sky_ps.cso");
 	//d3dUtil::CompileShader(SHADER_PATH L"Sky.hlsl", nullptr, "PS", "ps_5_1");
 	
-	/*_Shaders["fixedVS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_vs.cso");
+	_Shaders["fixedVS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_vs.cso");
 	//d3dUtil::CompileShader(SHADER_PATH L"Fixed.hlsl", nullptr, "VS", "vs_5_1");
 	_Shaders["fixedPS"] = d3dUtil::LoadBinary(SHADER_PATH L"fixed_ps.cso");
 	//d3dUtil::CompileShader(SHADER_PATH L"Fixed.hlsl", nullptr, "PS", "ps_5_1");
 
-	_Shaders["opaqueVS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_vs.cso");
+	/*_Shaders["opaqueVS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_vs.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "VS", "vs_5_1");
 	_Shaders["opaquePS"] = d3dUtil::LoadBinary(SHADER_PATH L"default_ps.cso");
 		//d3dUtil::CompileShader(SHADER_PATH L"Default.hlsl", nullptr, "PS", "ps_5_1");
@@ -351,6 +367,64 @@ void GraphicsWindow::BuildSkyGeometry()
 	_Geometries[geo->Name] = std::move(geo);
 }
 
+void GraphicsWindow::BuildFixedGeometry()
+{
+	GeometryGenerator geoGen;
+	GeometryGenerator::MeshData button = geoGen.CreateQuad(-1.0f, 1.0f, 2.0f, 2.0f, 0.0f);
+
+	size_t totalSize = button.Vertices.size();
+	std::vector<Vertex> vertices(totalSize);
+
+	UINT k = 0;
+	for (size_t i = 0; i < button.Vertices.size(); ++i, ++k)
+	{
+		auto& p = button.Vertices[i].Position;
+		vertices[k].Pos = p;
+		vertices[k].Normal = button.Vertices[i].Normal;
+		vertices[k].TexC = button.Vertices[i].TexC;
+	}
+
+	BoundingBox button_bounds;
+	BoundingBox::CreateFromPoints(button_bounds, button.Vertices.size(),
+		&vertices[0].Pos, sizeof(Vertex));
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), std::begin(button.GetIndices16()), std::end(button.GetIndices16()));
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "fixedGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
+		_CommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(_d3dDevice.Get(),
+		_CommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry buttonSubmesh;
+	buttonSubmesh.IndexCount = (UINT)button.Indices32.size();
+	buttonSubmesh.StartIndexLocation = 0;
+	buttonSubmesh.BaseVertexLocation = 0;
+	buttonSubmesh.Bounds = button_bounds;
+
+	geo->DrawArgs["button"] = buttonSubmesh;
+
+	_Geometries[geo->Name] = std::move(geo);
+}
+
 void GraphicsWindow::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
@@ -371,7 +445,7 @@ void GraphicsWindow::BuildPSOs()
 	psoDesc.DSVFormat = _DepthStencilFormat;
 
 	//
-	// PSO for opaque objects.
+	// PSO for Sky objects.
 	//
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc; 
 	skyPsoDesc.VS =
@@ -390,6 +464,24 @@ void GraphicsWindow::BuildPSOs()
 	skyPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
 	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&_PSOs["sky"])));
+
+	//
+	// PSO for Fixed objects.
+	//
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC fixedPsoDesc = psoDesc;
+	fixedPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(_Shaders["fixedVS"]->GetBufferPointer()),
+		_Shaders["fixedVS"]->GetBufferSize()
+	};
+
+	fixedPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(_Shaders["fixedPS"]->GetBufferPointer()),
+		_Shaders["fixedPS"]->GetBufferSize()
+	};
+
+	ThrowIfFailed(_d3dDevice->CreateGraphicsPipelineState(&fixedPsoDesc, IID_PPV_ARGS(&_PSOs["fixed"])));
 }
 
 void GraphicsWindow::BuildFrameResources()
@@ -415,6 +507,102 @@ void GraphicsWindow::BuildRenderItems()
 
 	_RitemLayer[(int)RenderLayer::Sky].push_back(skyRitem.get());
 	_AllRitems.push_back(std::move(skyRitem));
+
+	auto bUpButtonRitem = std::make_unique<RenderItem>();
+	_upButton = bUpButtonRitem.get();
+	XMStoreFloat4x4(&bUpButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.45f, 0.28f, 0.0f));
+	bUpButtonRitem->ObjCBIndex = 1;
+	bUpButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bUpButtonRitem->Mat = _Materials["up0"].get();
+	bUpButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bUpButtonRitem->IndexCount = bUpButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bUpButtonRitem->StartIndexLocation = bUpButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bUpButtonRitem->BaseVertexLocation = bUpButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bUpButtonRitem->Bounds = bUpButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bUpButtonRitem.get());
+	_AllRitems.push_back(std::move(bUpButtonRitem));
+
+	auto bDownButtonRitem = std::make_unique<RenderItem>();
+	_downButton = bDownButtonRitem.get();
+	XMStoreFloat4x4(&bDownButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.45f, 0.2f, 0.0f));
+	bDownButtonRitem->ObjCBIndex = 2;
+	bDownButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bDownButtonRitem->Mat = _Materials["down0"].get();
+	bDownButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bDownButtonRitem->IndexCount = bDownButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bDownButtonRitem->StartIndexLocation = bDownButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bDownButtonRitem->BaseVertexLocation = bDownButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bDownButtonRitem->Bounds = bDownButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bDownButtonRitem.get());
+	_AllRitems.push_back(std::move(bDownButtonRitem));
+
+	auto bLeftButtonRitem = std::make_unique<RenderItem>();
+	_leftButton = bLeftButtonRitem.get();
+	XMStoreFloat4x4(&bLeftButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.4f, 0.24f, 0.0f));
+	bLeftButtonRitem->ObjCBIndex = 3;
+	bLeftButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bLeftButtonRitem->Mat = _Materials["left0"].get();
+	bLeftButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bLeftButtonRitem->IndexCount = bLeftButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bLeftButtonRitem->StartIndexLocation = bLeftButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bLeftButtonRitem->BaseVertexLocation = bLeftButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bLeftButtonRitem->Bounds = bLeftButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bLeftButtonRitem.get());
+	_AllRitems.push_back(std::move(bLeftButtonRitem));
+
+	auto bRightButtonRitem = std::make_unique<RenderItem>();
+	_rightButton = bRightButtonRitem.get();
+	XMStoreFloat4x4(&bRightButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.5f, 0.24f, 0.0f));
+	bRightButtonRitem->ObjCBIndex = 4;
+	bRightButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bRightButtonRitem->Mat = _Materials["right0"].get();
+	bRightButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bRightButtonRitem->IndexCount = bRightButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bRightButtonRitem->StartIndexLocation = bRightButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bRightButtonRitem->BaseVertexLocation = bRightButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bRightButtonRitem->Bounds = bRightButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bRightButtonRitem.get());
+	_AllRitems.push_back(std::move(bRightButtonRitem));
+
+	auto bZoominButtonRitem = std::make_unique<RenderItem>();
+	_zoominButton = bZoominButtonRitem.get();
+	XMStoreFloat4x4(&bZoominButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.55f, 0.28f, 0.0f));
+	bZoominButtonRitem->ObjCBIndex = 5;
+	bZoominButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bZoominButtonRitem->Mat = _Materials["zoomin0"].get();
+	bZoominButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bZoominButtonRitem->IndexCount = bZoominButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bZoominButtonRitem->StartIndexLocation = bZoominButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bZoominButtonRitem->BaseVertexLocation = bZoominButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bZoominButtonRitem->Bounds = bZoominButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bZoominButtonRitem.get());
+	_AllRitems.push_back(std::move(bZoominButtonRitem));
+
+	auto bZoomoutButtonRitem = std::make_unique<RenderItem>();
+	_zoomoutButton = bZoomoutButtonRitem.get();
+	XMStoreFloat4x4(&bZoomoutButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
+		DirectX::XMMatrixTranslation(0.55f, 0.2f, 0.0f));
+	bZoomoutButtonRitem->ObjCBIndex = 6;
+	bZoomoutButtonRitem->Geo = _Geometries["fixedGeo"].get();
+	bZoomoutButtonRitem->Mat = _Materials["zoomout0"].get();
+	bZoomoutButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bZoomoutButtonRitem->IndexCount = bZoomoutButtonRitem->Geo->DrawArgs["button"].IndexCount;
+	bZoomoutButtonRitem->StartIndexLocation = bZoomoutButtonRitem->Geo->DrawArgs["button"].StartIndexLocation;
+	bZoomoutButtonRitem->BaseVertexLocation = bZoomoutButtonRitem->Geo->DrawArgs["button"].BaseVertexLocation;
+	bZoomoutButtonRitem->Bounds = bZoomoutButtonRitem->Geo->DrawArgs["button"].Bounds;
+
+	_RitemLayer[(int)RenderLayer::Fixed].push_back(bZoomoutButtonRitem.get());
+	_AllRitems.push_back(std::move(bZoomoutButtonRitem));
 }
 
 void GraphicsWindow::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -555,7 +743,7 @@ void GraphicsWindow::UpdateMainPassCB(const GameTimer& gt)
 void GraphicsWindow::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.NumDescriptors = 7;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&_SrvDescriptorHeap)));
@@ -566,7 +754,12 @@ void GraphicsWindow::BuildDescriptorHeaps()
 	
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> tex2DList =
 	{
-		//_Textures[""]->Resource
+		_Textures["upTex"]->Resource,
+		_Textures["downTex"]->Resource,
+		_Textures["leftTex"]->Resource,
+		_Textures["rightTex"]->Resource,
+		_Textures["zoominTex"]->Resource,
+		_Textures["zoomoutTex"]->Resource
 	};
 	
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -578,6 +771,9 @@ void GraphicsWindow::BuildDescriptorHeaps()
 	srvDesc.Format = skyTex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = skyTex->GetDesc().MipLevels;
 	_d3dDevice->CreateShaderResourceView(skyTex.Get(), &srvDesc, hDescriptor);
+
+	// next descriptor
+	hDescriptor.Offset(1, _CbvSrvUavDescriptorSize);
 
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	for (UINT i = 0; i < (UINT)tex2DList.size(); ++i)
@@ -601,8 +797,62 @@ void GraphicsWindow::BuildMaterials()
 	sky0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	sky0->Roughness = 0.3f;
 
+	auto up0 = std::make_unique<Material>();
+	up0->Name = "up0";
+	up0->MatCBIndex = 1;
+	up0->DiffuseSrvHeapIndex = 1;
+	up0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	up0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	up0->Roughness = 0.3f;
+
+	auto down0 = std::make_unique<Material>();
+	down0->Name = "down0";
+	down0->MatCBIndex = 2;
+	down0->DiffuseSrvHeapIndex = 2;
+	down0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	down0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	down0->Roughness = 0.3f;
+
+	auto left0 = std::make_unique<Material>();
+	left0->Name = "left0";
+	left0->MatCBIndex = 3;
+	left0->DiffuseSrvHeapIndex = 3;
+	left0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	left0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	left0->Roughness = 0.3f;
+
+	auto right0 = std::make_unique<Material>();
+	right0->Name = "right0";
+	right0->MatCBIndex = 4;
+	right0->DiffuseSrvHeapIndex = 4;
+	right0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	right0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	right0->Roughness = 0.3f;
+
+	auto zoomin0 = std::make_unique<Material>();
+	zoomin0->Name = "zoomin0";
+	zoomin0->MatCBIndex = 5;
+	zoomin0->DiffuseSrvHeapIndex = 5;
+	zoomin0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	zoomin0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	zoomin0->Roughness = 0.3f;
+
+	auto zoomout0 = std::make_unique<Material>();
+	zoomout0->Name = "zoomout0";
+	zoomout0->MatCBIndex = 6;
+	zoomout0->DiffuseSrvHeapIndex = 6;
+	zoomout0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	zoomout0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	zoomout0->Roughness = 0.3f;
+
 	
 	_Materials["sky0"] = std::move(sky0);
+	_Materials["up0"] = std::move(up0);
+	_Materials["down0"] = std::move(down0);
+	_Materials["left0"] = std::move(left0);
+	_Materials["right0"] = std::move(right0);
+	_Materials["zoomin0"] = std::move(zoomin0);
+	_Materials["zoomout0"] = std::move(zoomout0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GraphicsWindow::GetStaticSamplers()
