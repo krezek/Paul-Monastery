@@ -7,7 +7,7 @@
 #include <RenderItem.h>
 #include <Church.h>
 
-static int g_obj_idx = 7;
+extern int g_ObjCBIndex;
 
 void Church::BuildGeometry(ID3D12Device* devicePtr,
 	ID3D12GraphicsCommandList* commandListPtr,
@@ -76,7 +76,7 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	gridRitem->ObjCBIndex = g_obj_idx++;
+	gridRitem->ObjCBIndex = g_ObjCBIndex++;
 	gridRitem->Geo = geometries["churchGeo"].get();
 	gridRitem->Mat = materials["ground0"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

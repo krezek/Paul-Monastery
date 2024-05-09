@@ -13,6 +13,8 @@
 
 using namespace DirectX;
 
+int g_ObjCBIndex = 0;
+
 #define TEXTURE_PATH L"Textures\\"
 #define SHADER_PATH L"Shaders\\"
 #define MODELS_PATH L"Models\\"

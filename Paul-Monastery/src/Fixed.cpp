@@ -7,6 +7,8 @@
 #include <RenderItem.h>
 #include <Fixed.h>
 
+extern int g_ObjCBIndex;
+
 RenderItem* Fixed::_newButton = nullptr;
 RenderItem* Fixed::_upButton = nullptr;
 RenderItem* Fixed::_downButton = nullptr;
@@ -86,7 +88,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_upButton = bUpButtonRitem.get();
 	XMStoreFloat4x4(&bUpButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.45f, 0.28f, 0.0f));
-	bUpButtonRitem->ObjCBIndex = 1;
+	bUpButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bUpButtonRitem->Geo = geometries["fixedGeo"].get();
 	bUpButtonRitem->Mat = materials["up0"].get();
 	bUpButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -102,7 +104,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_downButton = bDownButtonRitem.get();
 	XMStoreFloat4x4(&bDownButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.45f, 0.2f, 0.0f));
-	bDownButtonRitem->ObjCBIndex = 2;
+	bDownButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bDownButtonRitem->Geo = geometries["fixedGeo"].get();
 	bDownButtonRitem->Mat = materials["down0"].get();
 	bDownButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -118,7 +120,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_leftButton = bLeftButtonRitem.get();
 	XMStoreFloat4x4(&bLeftButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.4f, 0.24f, 0.0f));
-	bLeftButtonRitem->ObjCBIndex = 3;
+	bLeftButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bLeftButtonRitem->Geo = geometries["fixedGeo"].get();
 	bLeftButtonRitem->Mat = materials["left0"].get();
 	bLeftButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -134,7 +136,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_rightButton = bRightButtonRitem.get();
 	XMStoreFloat4x4(&bRightButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.5f, 0.24f, 0.0f));
-	bRightButtonRitem->ObjCBIndex = 4;
+	bRightButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bRightButtonRitem->Geo = geometries["fixedGeo"].get();
 	bRightButtonRitem->Mat = materials["right0"].get();
 	bRightButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -150,7 +152,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_zoominButton = bZoominButtonRitem.get();
 	XMStoreFloat4x4(&bZoominButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.55f, 0.28f, 0.0f));
-	bZoominButtonRitem->ObjCBIndex = 5;
+	bZoominButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bZoominButtonRitem->Geo = geometries["fixedGeo"].get();
 	bZoominButtonRitem->Mat = materials["zoomin0"].get();
 	bZoominButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -166,7 +168,7 @@ void Fixed::BuildRenderItems(std::unordered_map<std::string,
 	_zoomoutButton = bZoomoutButtonRitem.get();
 	XMStoreFloat4x4(&bZoomoutButtonRitem->World, DirectX::XMMatrixScaling(0.02f, 0.02f, 0.1f) *
 		DirectX::XMMatrixTranslation(0.55f, 0.2f, 0.0f));
-	bZoomoutButtonRitem->ObjCBIndex = 6;
+	bZoomoutButtonRitem->ObjCBIndex = g_ObjCBIndex++;
 	bZoomoutButtonRitem->Geo = geometries["fixedGeo"].get();
 	bZoomoutButtonRitem->Mat = materials["zoomout0"].get();
 	bZoomoutButtonRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

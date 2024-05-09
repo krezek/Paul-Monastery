@@ -7,6 +7,8 @@
 #include <RenderItem.h>
 #include <Sky.h>
 
+extern int g_ObjCBIndex;
+
 void Sky::BuildGeometry(ID3D12Device* devicePtr,
 	ID3D12GraphicsCommandList* commandListPtr, 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& geometries)
@@ -68,7 +70,7 @@ void Sky::BuildRenderItems(std::unordered_map<std::string, std::unique_ptr<MeshG
 {
 	auto skyRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&skyRitem->World, DirectX::XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
-	skyRitem->ObjCBIndex = 0;
+	skyRitem->ObjCBIndex = g_ObjCBIndex++;
 	skyRitem->Geo = geometries["skyGeo"].get();
 	skyRitem->Mat = materials["sky0"].get();
 	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
