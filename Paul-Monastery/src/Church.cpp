@@ -16,7 +16,8 @@ using namespace DirectX;
 #define CHURCH_BLOCK_HEIGHT (CHURCH_WALL_HEIGHT / CHURCH_V_BLOCK_COUNT)
 #define CHURCH_BLOCK_ANGLE (XM_2PI / CHURCH_H_BLOCK_COUNT)
 
-#define CHURCH_DOME_RADIUS (CHURCH_BLOCK_RADIUS - 2.0f)
+#define CHURCH_ROOF_THICKNESS 1.5f
+#define CHURCH_DOME_RADIUS (CHURCH_BLOCK_RADIUS - CHURCH_ROOF_THICKNESS)
 
 extern int g_ObjCBIndex;
 
@@ -28,9 +29,11 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData block = geoGen.CreateCylinder(CHURCH_BLOCK_RADIUS, CHURCH_BLOCK_HEIGHT, 0.0f, CHURCH_BLOCK_ANGLE, 4, 4);
 	GeometryGenerator::MeshData dome = geoGen.CreateDome(CHURCH_DOME_RADIUS, XM_PIDIV2, 50, 50);
+	GeometryGenerator::MeshData roofRing = geoGen.CreateRing(CHURCH_BLOCK_RADIUS, CHURCH_ROOF_THICKNESS, 0.0f, XM_2PI, 50, 4);
 
 	size_t totalSize = block.Vertices.size() +
-		dome.Vertices.size();
+		dome.Vertices.size() +
+		roofRing.Vertices.size();
 	std::vector<Vertex> vertices(totalSize);
 
 	UINT k = 0;
@@ -50,12 +53,21 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 		vertices[k].TexC = dome.Vertices[i].TexC;
 	}
 
+	for (size_t i = 0; i < roofRing.Vertices.size(); ++i, ++k)
+	{
+		auto& p = roofRing.Vertices[i].Position;
+		vertices[k].Pos = p;
+		vertices[k].Normal = roofRing.Vertices[i].Normal;
+		vertices[k].TexC = roofRing.Vertices[i].TexC;
+	}
+
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(block.GetIndices16()), std::end(block.GetIndices16()));
 	indices.insert(indices.end(), std::begin(dome.GetIndices16()), std::end(dome.GetIndices16()));
+	indices.insert(indices.end(), std::begin(roofRing.GetIndices16()), std::end(roofRing.GetIndices16()));
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -91,6 +103,15 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	domeSubmesh.BaseVertexLocation = (UINT)block.Vertices.size();
 
 	geo->DrawArgs["dome"] = domeSubmesh;
+
+	SubmeshGeometry roofRingSubmesh;
+	roofRingSubmesh.IndexCount = (UINT)roofRing.Indices32.size();
+	roofRingSubmesh.StartIndexLocation = (UINT)block.Indices32.size() + 
+		(UINT)dome.Indices32.size();
+	roofRingSubmesh.BaseVertexLocation = (UINT)block.Vertices.size() +
+		(UINT)dome.Vertices.size();
+
+	geo->DrawArgs["roofRing"] = roofRingSubmesh;
 
 
 	geometries[geo->Name] = std::move(geo);
@@ -156,4 +177,19 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 
 	opaqueRenderItems.push_back(domeRitem.get());
 	allRitems.push_back(std::move(domeRitem));
+
+	// add roof ring object
+	auto roofRingRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&roofRingRitem->World, XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * CHURCH_V_BLOCK_COUNT, 0.0f));
+	XMStoreFloat4x4(&roofRingRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	roofRingRitem->ObjCBIndex = g_ObjCBIndex++;
+	roofRingRitem->Geo = geometries["churchGeo"].get();
+	roofRingRitem->Mat = materials["churchDome0"].get();
+	roofRingRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	roofRingRitem->IndexCount = roofRingRitem->Geo->DrawArgs["roofRing"].IndexCount;
+	roofRingRitem->StartIndexLocation = roofRingRitem->Geo->DrawArgs["roofRing"].StartIndexLocation;
+	roofRingRitem->BaseVertexLocation = roofRingRitem->Geo->DrawArgs["roofRing"].BaseVertexLocation;
+
+	opaqueRenderItems.push_back(roofRingRitem.get());
+	allRitems.push_back(std::move(roofRingRitem));
 }
