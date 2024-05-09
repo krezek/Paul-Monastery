@@ -406,7 +406,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateSector(float radius, float 
 			v.Position.y = 0;
 			v.Position.z = r * sinf(theta);
 
-			v.Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+			v.Normal = XMFLOAT3(0.0f, -1.0f, 0.0f);
 
 			v.TexC.x = 1.0f - theta / (beta - alpha);
 			v.TexC.y = (drStep * j) / dr;
@@ -456,7 +456,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateSector(float radius, float 
 			v.Position.z = (radius - dr) * sinf(theta);
 
 			v.Normal = XMFLOAT3(v.Position.x, 0.0f, v.Position.z);
-			XMStoreFloat3(&v.Normal, XMVector3Normalize(XMLoadFloat3(&v.Normal)));
+			XMStoreFloat3(&v.Normal, -XMVector3Normalize(XMLoadFloat3(&v.Normal)));
 
 			v.TexC.x = 0.0f;
 			v.TexC.y = 0.0f;
