@@ -236,3 +236,54 @@ GeometryGenerator::MeshData GeometryGenerator::CreateRing(float oradius, float t
 
 	return meshData;
 }
+
+GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float radius, float height, float alpha, float beta, uint32 sliceCount, uint32 stackCount)
+{
+	MeshData meshData;
+
+	float thetaStep = (beta - alpha) / sliceCount;
+	float dhStep = height / stackCount;
+
+	for (uint32 j = 0; j <= stackCount; ++j)
+	{
+		float h = dhStep * j;
+
+		for (uint32 i = 0; i <= sliceCount; ++i)
+		{
+			float theta = alpha + i * thetaStep;
+
+			Vertex v;
+
+			// spherical to cartesian
+			v.Position.x = radius * cosf(theta);
+			v.Position.y = h;
+			v.Position.z = radius * sinf(theta);
+
+			v.Normal = XMFLOAT3(v.Position.x, 0.0f, v.Position.z);
+			XMStoreFloat3(&v.Normal, XMVector3Normalize(XMLoadFloat3(&v.Normal)));
+
+			v.TexC.x = 1.0f - theta / (beta - alpha);
+			v.TexC.y = h / height;
+
+			meshData.Vertices.push_back(v);
+		}
+	}
+
+	for (uint32 j = 0; j < stackCount; ++j)
+	{
+		uint32 base = j * (sliceCount + 1);
+
+		for (uint32 i = 0; i < sliceCount; ++i)
+		{
+			meshData.Indices32.push_back(base + i);
+			meshData.Indices32.push_back(base + i + sliceCount + 1);
+			meshData.Indices32.push_back(base + i + 1);
+
+			meshData.Indices32.push_back(base + i + 1);
+			meshData.Indices32.push_back(base + i + sliceCount + 1);
+			meshData.Indices32.push_back(base + i + sliceCount + 1 + 1);
+		}
+	}
+
+	return meshData;
+}

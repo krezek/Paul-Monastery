@@ -16,7 +16,7 @@ void Monastery::BuildGeometry(ID3D12Device* devicePtr,
 {
 	GeometryGenerator geoGen;
 	//GeometryGenerator::MeshData grid = geoGen.CreateGrid(12.0f, 12.0f, 12, 12);
-	GeometryGenerator::MeshData grid = geoGen.CreateRing(12.0f, 6.0f, 0.0f, DirectX::XM_PI, 12, 12);
+	GeometryGenerator::MeshData grid = geoGen.CreateCylinder(6.0f, 2.0f, 0.0f, DirectX::XM_PIDIV2, 4, 4);
 	
 	size_t totalSize = grid.Vertices.size();
 	std::vector<Vertex> vertices(totalSize);

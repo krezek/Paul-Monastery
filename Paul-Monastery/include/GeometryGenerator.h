@@ -62,6 +62,7 @@ public:
 	MeshData CreateSphere(float radius, uint32 sliceCount, uint32 stackCount);
 
 	MeshData CreateRing(float oradius, float thickness, float alpha, float beta, uint32 sliceCount, uint32 stackCount);
+	MeshData CreateCylinder(float radius, float height, float alpha, float beta, uint32 sliceCount, uint32 stackCount);
 };
 
 #endif /* _GEOMETRY_GENERATOR_H_ */

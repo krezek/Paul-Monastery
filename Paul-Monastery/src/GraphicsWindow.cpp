@@ -395,6 +395,7 @@ void GraphicsWindow::BuildPSOs()
 	// PSO for Opaque objects.
 	//
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc = psoDesc;
+	//opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	opaquePsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(_Shaders["opaqueVS"]->GetBufferPointer()),
