@@ -91,7 +91,7 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 			XMStoreFloat4x4(&blockRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 			blockRitem->ObjCBIndex = g_ObjCBIndex++;
 			blockRitem->Geo = geometries["churchGeo"].get();
-			blockRitem->Mat = materials["ground0"].get();
+			blockRitem->Mat = materials["churchBlock0"].get();
 			blockRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 			blockRitem->IndexCount = blockRitem->Geo->DrawArgs["block"].IndexCount;
 			blockRitem->StartIndexLocation = blockRitem->Geo->DrawArgs["block"].StartIndexLocation;
@@ -109,7 +109,7 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 			XMStoreFloat4x4(&blockRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 			blockRitem->ObjCBIndex = g_ObjCBIndex++;
 			blockRitem->Geo = geometries["churchGeo"].get();
-			blockRitem->Mat = materials["ground0"].get();
+			blockRitem->Mat = materials["churchBlock0"].get();
 			blockRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 			blockRitem->IndexCount = blockRitem->Geo->DrawArgs["block"].IndexCount;
 			blockRitem->StartIndexLocation = blockRitem->Geo->DrawArgs["block"].StartIndexLocation;

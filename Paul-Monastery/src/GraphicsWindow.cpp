@@ -226,7 +226,8 @@ void GraphicsWindow::LoadTextures()
 		"zoominTex",
 		"zoomoutTex",
 
-		"groundTex"
+		"groundTex",
+		"churchBlockTex"
 	};
 
 	std::vector<std::wstring> texFilenames =
@@ -240,7 +241,8 @@ void GraphicsWindow::LoadTextures()
 		TEXTURE_PATH L"zoomin.dds",
 		TEXTURE_PATH L"zoomout.dds",
 
-		TEXTURE_PATH L"ground.dds"
+		TEXTURE_PATH L"ground.dds",
+		TEXTURE_PATH L"church-block.dds"
 	};
 
 	for (int i = 0; i < (int)texNames.size(); ++i)
@@ -574,7 +576,7 @@ void GraphicsWindow::UpdateMainPassCB(const GameTimer& gt)
 void GraphicsWindow::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 8;
+	srvHeapDesc.NumDescriptors = 9;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&_SrvDescriptorHeap)));
@@ -592,7 +594,8 @@ void GraphicsWindow::BuildDescriptorHeaps()
 		_Textures["zoominTex"]->Resource,
 		_Textures["zoomoutTex"]->Resource,
 
-		_Textures["groundTex"]->Resource
+		_Textures["groundTex"]->Resource,
+		_Textures["churchBlockTex"]->Resource
 	};
 	
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -685,6 +688,14 @@ void GraphicsWindow::BuildMaterials()
 	ground0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	ground0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	ground0->Roughness = 0.3f;
+
+	auto churchBlock0 = std::make_unique<Material>();
+	churchBlock0->Name = "churchBlock0";
+	churchBlock0->MatCBIndex = 8;
+	churchBlock0->DiffuseSrvHeapIndex = 8;
+	churchBlock0->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	churchBlock0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+	churchBlock0->Roughness = 0.3f;
 	
 	_Materials["sky0"] = std::move(sky0);
 
@@ -696,6 +707,7 @@ void GraphicsWindow::BuildMaterials()
 	_Materials["zoomout0"] = std::move(zoomout0);
 
 	_Materials["ground0"] = std::move(ground0);
+	_Materials["churchBlock0"] = std::move(churchBlock0);
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GraphicsWindow::GetStaticSamplers()
