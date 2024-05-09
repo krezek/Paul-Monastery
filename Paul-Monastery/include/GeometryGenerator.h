@@ -57,28 +57,11 @@ public:
 		std::vector<uint16> mIndices16;
 	};
 
-	MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
-
+	MeshData CreateQuad(float x, float y, float w, float h, float depth);
+	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
 	MeshData CreateSphere(float radius, uint32 sliceCount, uint32 stackCount);
 
-	MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
-
-	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-	MeshData CreateOCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-	MeshData CreateICylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-
-	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
-
-	MeshData CreateQuad(float x, float y, float w, float h, float depth);
-
-	MeshData CreateRing(float oradius, float iradius, uint32 sliceCount, uint32 stackCount);
-
-private:
-	void Subdivide(MeshData& meshData);
-	Vertex MidPoint(const Vertex& v0, const Vertex& v1);
-	void BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
-	void BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
+	MeshData CreateRing(float oradius, float thickness, float alpha, float beta, uint32 sliceCount, uint32 stackCount);
 };
-
 
 #endif /* _GEOMETRY_GENERATOR_H_ */
