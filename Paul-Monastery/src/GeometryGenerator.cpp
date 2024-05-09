@@ -355,3 +355,173 @@ GeometryGenerator::MeshData GeometryGenerator::CreateDome(float radius, float an
 
 	return meshData;
 }
+
+GeometryGenerator::MeshData GeometryGenerator::CreateSector(float radius, float dr, float alpha, float beta, float thick,
+	uint32 sliceCount, uint32 stackCount)
+{
+	MeshData meshData;
+
+	float thetaStep = (beta - alpha) / sliceCount;
+	float drStep = dr / stackCount;
+
+	// create sector face
+	for (uint32 j = 0; j <= stackCount; ++j)
+	{
+		float r = radius - drStep * j;
+
+		for (uint32 i = 0; i <= sliceCount; ++i)
+		{
+			float theta = alpha + i * thetaStep;
+
+			Vertex v;
+
+			// spherical to cartesian
+			v.Position.x = r * cosf(theta);
+			v.Position.y = thick;
+			v.Position.z = r * sinf(theta);
+
+			v.Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+
+			v.TexC.x = 1.0f - theta / (beta - alpha);
+			v.TexC.y = (drStep * j) / dr;
+
+			meshData.Vertices.push_back(v);
+		}
+	}
+
+	// create top cover
+	for (uint32 i = 0; i <= sliceCount; ++i)
+	{
+		float theta = alpha + i * thetaStep;
+
+		Vertex v1, v2;
+
+		v1.Position.x = radius * cosf(theta);
+		v1.Position.y = 0;
+		v1.Position.z = radius * sinf(theta);
+
+		v1.Normal = XMFLOAT3(v1.Position.x, 0.0f, v1.Position.z);
+		XMVECTOR n = XMLoadFloat3(&v1.Normal);
+		n = XMVector3Normalize(n);
+		XMStoreFloat3(&v1.Normal, n);
+
+		v1.TexC.x = 0.0f;
+		v1.TexC.y = 0.0f;
+
+		meshData.Vertices.push_back(v1);
+
+		v2.Position.x = radius * cosf(theta);
+		v2.Position.y = thick;
+		v2.Position.z = radius * sinf(theta);
+
+		v2.Normal = XMFLOAT3(v2.Position.x, 0.0f, v2.Position.z);
+		n = XMLoadFloat3(&v2.Normal);
+		n = XMVector3Normalize(n);
+		XMStoreFloat3(&v2.Normal, n);
+
+		v2.TexC.x = 0.0f;
+		v2.TexC.y = 0.0f;
+
+		meshData.Vertices.push_back(v2);
+	}
+
+	// create bottom cover
+	for (uint32 i = 0; i <= sliceCount; ++i)
+	{
+		float theta = alpha + i * thetaStep;
+
+		Vertex v1, v2;
+
+		v1.Position.x = (radius - dr) * cosf(theta);
+		v1.Position.y = 0;
+		v1.Position.z = (radius - dr) * sinf(theta);
+
+		v1.Normal = XMFLOAT3(v1.Position.x, 0.0f, v1.Position.z);
+		XMVECTOR n = XMLoadFloat3(&v1.Normal);
+		n = XMVector3Normalize(n);
+		XMStoreFloat3(&v1.Normal, n);
+
+		v1.TexC.x = 0.0f;
+		v1.TexC.y = 0.0f;
+
+		meshData.Vertices.push_back(v1);
+
+		v2.Position.x = (radius - dr) * cosf(theta);
+		v2.Position.y = thick;
+		v2.Position.z = (radius - dr) * sinf(theta);
+
+		v2.Normal = XMFLOAT3(v2.Position.x, 0.0f, v2.Position.z);
+		n = XMLoadFloat3(&v2.Normal);
+		n = XMVector3Normalize(n);
+		XMStoreFloat3(&v2.Normal, n);
+
+		v2.TexC.x = 0.0f;
+		v2.TexC.y = 0.0f;
+
+		meshData.Vertices.push_back(v2);
+	}
+
+	// create indices
+	for (uint32 j = 0; j < stackCount; ++j)
+	{
+		uint32 base = j * (sliceCount + 1);
+		uint32 i = 0;
+
+		for (; i < sliceCount; ++i)
+		{
+			meshData.Indices32.push_back(base + i);
+			meshData.Indices32.push_back(base + i + sliceCount + 1);
+			meshData.Indices32.push_back(base + i + 1);
+
+			meshData.Indices32.push_back(base + i + 1);
+			meshData.Indices32.push_back(base + i + sliceCount + 1);
+			meshData.Indices32.push_back(base + i + sliceCount + 1 + 1);
+		}
+	}
+
+	for (uint32 i = 0; i < sliceCount * 2; i += 2)
+	{
+		uint32 base = (stackCount + 1) * (sliceCount + 1);
+
+		meshData.Indices32.push_back(base + i);
+		meshData.Indices32.push_back(base + i + 1);
+		meshData.Indices32.push_back(base + i + 2);
+
+		meshData.Indices32.push_back(base + i + 3);
+		meshData.Indices32.push_back(base + i + 2);
+		meshData.Indices32.push_back(base + i + 1);
+	}
+
+	for (uint32 i = 0; i < sliceCount * 2; i += 2)
+	{
+		uint32 base = (stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 2;
+
+		meshData.Indices32.push_back(base + i);
+		meshData.Indices32.push_back(base + i + 2);
+		meshData.Indices32.push_back(base + i + 1);
+
+		meshData.Indices32.push_back(base + i + 3);
+		meshData.Indices32.push_back(base + i + 1);
+		meshData.Indices32.push_back(base + i + 2);
+	}
+
+	{
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1));
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 2);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + 1);
+
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 2 + 1);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + 1);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 2);
+
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - 1);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - 2);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - (sliceCount + 1) * 2 - 1);
+
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - (sliceCount + 1) * 2 - 2);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - (sliceCount + 1) * 2 - 1);
+		meshData.Indices32.push_back((stackCount + 1) * (sliceCount + 1) + (sliceCount + 1) * 4 - 2);
+	}
+
+	return meshData;
+}
