@@ -64,7 +64,7 @@ public:
 	MeshData CreateRing(float oradius, float thickness, float alpha, float beta, uint32 sliceCount, uint32 stackCount);
 	MeshData CreateCylinder(float radius, float height, float alpha, float beta, uint32 sliceCount, uint32 stackCount);
 	MeshData CreateDome(float radius, float angle, uint32 sliceCount, uint32 stackCount);
-	MeshData CreateSector(float radius, float dr, float alpha, float beta, float thick, uint32 sliceCount, uint32 stackCount);
+	MeshData CreateSector(float radius, float dr, float alpha, float beta, float thick, uint32 sliceCount, uint32 stackCount1, uint32 stackCount2);
 };
 
 #endif /* _GEOMETRY_GENERATOR_H_ */

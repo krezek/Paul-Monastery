@@ -18,6 +18,8 @@ using namespace DirectX;
 
 #define CHURCH_ROOF_THICKNESS 1.5f
 #define CHURCH_DOME_RADIUS (CHURCH_BLOCK_RADIUS - CHURCH_ROOF_THICKNESS)
+#define CHURCH_DOME_SECTOR_DR 0.5f
+#define CHURCH_DOME_SECTOR_THICKNESS 0.5f
 
 extern int g_ObjCBIndex;
 
@@ -30,10 +32,12 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	GeometryGenerator::MeshData block = geoGen.CreateCylinder(CHURCH_BLOCK_RADIUS, CHURCH_BLOCK_HEIGHT, 0.0f, CHURCH_BLOCK_ANGLE, 4, 4);
 	GeometryGenerator::MeshData dome = geoGen.CreateDome(CHURCH_DOME_RADIUS, XM_PIDIV2, 50, 50);
 	GeometryGenerator::MeshData roofRing = geoGen.CreateRing(CHURCH_BLOCK_RADIUS, CHURCH_ROOF_THICKNESS, 0.0f, XM_2PI, 50, 4);
+	GeometryGenerator::MeshData domeSector = geoGen.CreateSector(CHURCH_DOME_RADIUS + CHURCH_DOME_SECTOR_DR, CHURCH_DOME_SECTOR_DR, 0.0f, XM_PIDIV2, CHURCH_DOME_SECTOR_THICKNESS, 50, 2, 2);
 
 	size_t totalSize = block.Vertices.size() +
 		dome.Vertices.size() +
-		roofRing.Vertices.size();
+		roofRing.Vertices.size() +
+		domeSector.Vertices.size();
 	std::vector<Vertex> vertices(totalSize);
 
 	UINT k = 0;
@@ -61,6 +65,13 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 		vertices[k].TexC = roofRing.Vertices[i].TexC;
 	}
 
+	for (size_t i = 0; i < domeSector.Vertices.size(); ++i, ++k)
+	{
+		auto& p = domeSector.Vertices[i].Position;
+		vertices[k].Pos = p;
+		vertices[k].Normal = domeSector.Vertices[i].Normal;
+		vertices[k].TexC = domeSector.Vertices[i].TexC;
+	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
@@ -68,6 +79,7 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	indices.insert(indices.end(), std::begin(block.GetIndices16()), std::end(block.GetIndices16()));
 	indices.insert(indices.end(), std::begin(dome.GetIndices16()), std::end(dome.GetIndices16()));
 	indices.insert(indices.end(), std::begin(roofRing.GetIndices16()), std::end(roofRing.GetIndices16()));
+	indices.insert(indices.end(), std::begin(domeSector.GetIndices16()), std::end(domeSector.GetIndices16()));
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -112,6 +124,17 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 		(UINT)dome.Vertices.size();
 
 	geo->DrawArgs["roofRing"] = roofRingSubmesh;
+
+	SubmeshGeometry domeSectorSubmesh;
+	domeSectorSubmesh.IndexCount = (UINT)domeSector.Indices32.size();
+	domeSectorSubmesh.StartIndexLocation = (UINT)block.Indices32.size() +
+		(UINT)dome.Indices32.size() + 
+		(UINT)roofRing.Indices32.size();
+	domeSectorSubmesh.BaseVertexLocation = (UINT)block.Vertices.size() +
+		(UINT)dome.Vertices.size() +
+		(UINT)roofRing.Vertices.size();
+
+	geo->DrawArgs["domeSector"] = domeSectorSubmesh;
 
 
 	geometries[geo->Name] = std::move(geo);
@@ -192,4 +215,25 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 
 	opaqueRenderItems.push_back(roofRingRitem.get());
 	allRitems.push_back(std::move(roofRingRitem));
+
+	// add dome sectors
+	for (int i = 0; i < 4; ++i)
+	{
+		auto domeSectorRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&domeSectorRitem->World, XMMatrixTranslation(0.0f, -CHURCH_DOME_SECTOR_THICKNESS / 2, 0.0f)  *
+			XMMatrixRotationX(-XM_PIDIV2) *
+			XMMatrixRotationY(XM_PIDIV2 * i) *
+			XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * CHURCH_V_BLOCK_COUNT, 0.0f));
+		XMStoreFloat4x4(&domeSectorRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		domeSectorRitem->ObjCBIndex = g_ObjCBIndex++;
+		domeSectorRitem->Geo = geometries["churchGeo"].get();
+		domeSectorRitem->Mat = materials["churchBlock0"].get();
+		domeSectorRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		domeSectorRitem->IndexCount = domeSectorRitem->Geo->DrawArgs["domeSector"].IndexCount;
+		domeSectorRitem->StartIndexLocation = domeSectorRitem->Geo->DrawArgs["domeSector"].StartIndexLocation;
+		domeSectorRitem->BaseVertexLocation = domeSectorRitem->Geo->DrawArgs["domeSector"].BaseVertexLocation;
+
+		opaqueRenderItems.push_back(domeSectorRitem.get());
+		allRitems.push_back(std::move(domeSectorRitem));
+	}
 }
