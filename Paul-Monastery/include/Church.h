@@ -1,13 +1,11 @@
-#ifndef _MONASTERY_H_
-#define _MONASTERY_H_
+#ifndef _CHURCH_H_
+#define _CHURCH_H_
 
-#include <Church.h>
-
-class Monastery
+class Church
 {
 public:
-	Monastery();
-
+	Church() = default;
+	
 	void BuildGeometry(ID3D12Device* devicePtr,
 		ID3D12GraphicsCommandList* commandListPtr,
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& geometries);
@@ -16,10 +14,6 @@ public:
 		std::unordered_map<std::string, std::unique_ptr<Material>>& materials,
 		std::vector<std::unique_ptr<RenderItem>>& allRitems,
 		std::vector<RenderItem*>& opaqueRenderItems);
-
-protected:
-	std::unique_ptr<Church> _Church;
 };
 
-
-#endif /* _MONASTERY_H_ */
+#endif /* _CHURCH_H_ */

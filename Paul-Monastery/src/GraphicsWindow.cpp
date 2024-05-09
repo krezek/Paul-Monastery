@@ -10,7 +10,6 @@
 #include <GeometryGenerator.h>
 #include <Sky.h>
 #include <Fixed.h>
-#include <Monastery.h>
 
 using namespace DirectX;
 
@@ -38,6 +37,7 @@ void GraphicsWindow::InitDirect3D()
 	_CbvSrvDescriptorSize = _d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	LoadTextures();
+	BuildMonastery();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
@@ -254,6 +254,11 @@ void GraphicsWindow::LoadTextures()
 	}
 }
 
+void GraphicsWindow::BuildMonastery()
+{
+	_Monastery = std::make_unique<Monastery>();
+}
+
 void GraphicsWindow::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable0;
@@ -330,7 +335,8 @@ void GraphicsWindow::BuildGeometry()
 {
 	Sky::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 	Fixed::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
-	Monastery::BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
+
+	_Monastery->BuildGeometry(_d3dDevice.Get(), _CommandList.Get(), _Geometries);
 }
 
 void GraphicsWindow::BuildPSOs()
@@ -424,7 +430,8 @@ void GraphicsWindow::BuildRenderItems()
 {
 	Sky::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Sky]);
 	Fixed::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Fixed]);
-	Monastery::BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Opaque]);
+
+	_Monastery->BuildRenderItems(_Geometries, _Materials, _AllRitems, _RitemLayer[(int)RenderLayer::Opaque]);
 }
 
 void GraphicsWindow::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

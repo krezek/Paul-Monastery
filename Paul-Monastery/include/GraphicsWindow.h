@@ -6,6 +6,7 @@
 #include <UploadBuffer.h>
 #include <FrameResource.h>
 #include <RenderItem.h>
+#include <Monastery.h>
 
 
 class GraphicsWindow : public AbstractWindow
@@ -85,11 +86,14 @@ protected:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
+	void BuildMonastery();
 
 	void PickFixed(int sx, int sy);
 	
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+
+	std::unique_ptr<Monastery> _Monastery;
 };
 
 #endif /* _GRAPHICS_WINDOW_H_ */

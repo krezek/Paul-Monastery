@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\AbstractWindow.cpp" />
+    <ClCompile Include="src\Church.cpp" />
     <ClCompile Include="src\d3dUtil.cpp" />
     <ClCompile Include="src\DDSTextureLoader.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -159,6 +160,7 @@
   <ItemGroup>
     <ClInclude Include="include\AbstractWindow.h" />
     <ClInclude Include="include\BaseWindow.hpp" />
+    <ClInclude Include="include\Church.h" />
     <ClInclude Include="include\d3dUtil.h" />
     <ClInclude Include="include\d3dx12.h" />
     <ClInclude Include="include\DDSTextureLoader.h" />
