@@ -66,9 +66,9 @@ protected:
 	DirectX::XMFLOAT4X4 _Proj = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 _FixedView = MathHelper::Identity4x4();
 
-	float _Theta = 1.6f * DirectX::XM_PI;
+	float _Theta = 1.5f * DirectX::XM_PI;
 	float _Phi = DirectX::XM_PIDIV2 - 0.5f;
-	float _Radius = 15.0f;
+	float _Radius = 50.0f;
 
 protected:
 	void UpdateCamera(const GameTimer& gt);

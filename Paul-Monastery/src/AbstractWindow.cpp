@@ -591,7 +591,8 @@ float AbstractWindow::AspectRatio() const
 void AbstractWindow::RenderUI()
 {
 	D2D1_SIZE_F rtSize = _d2dRenderTargets[_CurrBackBuffer]->GetSize();
-	D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, 200);
+	//D2D1_RECT_F textRect = D2D1::RectF(0, 0, rtSize.width, 200);
+	D2D1_RECT_F textRect = D2D1::RectF(0, 0, 300, 200);
 
 	_d3d11On12Device->AcquireWrappedResources(_wrappedBackBuffers[_CurrBackBuffer].GetAddressOf(), 1);
 
