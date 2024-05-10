@@ -534,7 +534,28 @@ GeometryGenerator::MeshData GeometryGenerator::CreateSector(float radius, float 
 		}
 	}
 
-	// TODO add sides covers
+	// add sides covers
+
+	uint32 b0 = 0;
+	uint32 b1 = (stackCount1 + 1) * (sliceCount + 1);
+	uint32 b2 = 2 * (stackCount1 + 1) * (sliceCount + 1);
+	uint32 b3 = (stackCount2 + 1) * (sliceCount + 1) + 2 * (stackCount1 + 1) * (sliceCount + 1);
+
+	meshData.Indices32.push_back(b0 + 0);
+	meshData.Indices32.push_back(b1 + 0);
+	meshData.Indices32.push_back(b0 + (stackCount1) * (sliceCount + 1));
+
+	meshData.Indices32.push_back(b0 + (stackCount1) * (sliceCount + 1));
+	meshData.Indices32.push_back(b1 + 0);
+	meshData.Indices32.push_back(b1 + (stackCount1) * (sliceCount + 1));
+
+	meshData.Indices32.push_back(b0 + (sliceCount));
+	meshData.Indices32.push_back(b0 + (stackCount1) * (sliceCount + 1) + (sliceCount));
+	meshData.Indices32.push_back(b1 + (sliceCount));
+
+	meshData.Indices32.push_back(b0 + (stackCount1) * (sliceCount + 1) + (sliceCount));
+	meshData.Indices32.push_back(b1 + (stackCount1) * (sliceCount + 1) + (sliceCount));
+	meshData.Indices32.push_back(b1 + (sliceCount));
 
 	return meshData;
 }
