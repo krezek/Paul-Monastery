@@ -476,7 +476,7 @@ void GraphicsWindow::UpdateCamera(const GameTimer& gt)
 	_EyePos.y = _Radius * cosf(_Phi);
 
 	DirectX::XMVECTOR pos = DirectX::XMVectorSet(_EyePos.x, _EyePos.y, _EyePos.z, 1.0f);
-	DirectX::XMVECTOR target = DirectX::XMVectorZero();
+	DirectX::XMVECTOR target = DirectX::XMVectorSet(0.0f, 5.0f, 0.0f, 0.0f);
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);

@@ -68,7 +68,7 @@ protected:
 
 	float _Theta = 1.5f * DirectX::XM_PI;
 	float _Phi = DirectX::XM_PIDIV2 - 0.5f;
-	float _Radius = 50.0f;
+	float _Radius = 30.0f;
 
 protected:
 	void UpdateCamera(const GameTimer& gt);
