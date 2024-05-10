@@ -21,6 +21,11 @@ using namespace DirectX;
 #define CHURCH_DOME_SECTOR_DR 0.5f
 #define CHURCH_DOME_SECTOR_THICKNESS 0.5f
 
+#define CHURCH_FRONT_SPACE_ANGLE (DirectX::XM_PIDIV2 / 4.0f)
+#define CHURCH_FRONT_SPACE_ALPHA (DirectX::XM_PIDIV2 - CHURCH_FRONT_SPACE_ANGLE)
+#define CHURCH_FRONT_SPACE_BETA (DirectX::XM_PIDIV2 + CHURCH_FRONT_SPACE_ANGLE)
+#define CHURCH_FRONT_SPACE_HEIGHT (CHURCH_WALL_HEIGHT * 0.9f)
+
 extern int g_ObjCBIndex;
 
 void Church::BuildGeometry(ID3D12Device* devicePtr,
@@ -32,7 +37,8 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	GeometryGenerator::MeshData block = geoGen.CreateCylinder(CHURCH_BLOCK_RADIUS, CHURCH_BLOCK_HEIGHT, 0.0f, CHURCH_BLOCK_ANGLE, 4, 4);
 	GeometryGenerator::MeshData dome = geoGen.CreateDome(CHURCH_DOME_RADIUS, XM_PIDIV2, 50, 50);
 	GeometryGenerator::MeshData roofRing = geoGen.CreateRing(CHURCH_BLOCK_RADIUS, CHURCH_ROOF_THICKNESS, 0.0f, XM_2PI, 50, 4);
-	GeometryGenerator::MeshData domeSector = geoGen.CreateSector(CHURCH_DOME_RADIUS + CHURCH_DOME_SECTOR_DR, CHURCH_DOME_SECTOR_DR, 0.0f, XM_PIDIV2, CHURCH_DOME_SECTOR_THICKNESS, 50, 2, 2);
+	GeometryGenerator::MeshData domeSector = geoGen.CreateSector(CHURCH_DOME_RADIUS + CHURCH_DOME_SECTOR_DR, 
+		CHURCH_DOME_SECTOR_DR, 0.0f, XM_PIDIV2, CHURCH_DOME_SECTOR_THICKNESS, 50, 2, 2);
 
 	size_t totalSize = block.Vertices.size() +
 		dome.Vertices.size() +
@@ -150,9 +156,16 @@ void Church::BuildRenderItems_Roof(std::unordered_map<std::string, std::unique_p
 	{
 		for (int i = 0; i < CHURCH_H_BLOCK_COUNT; ++i)
 		{
+			XMMATRIX SRT = XMMatrixRotationY(CHURCH_BLOCK_ANGLE * i) *
+				XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * j, 0.0f);
+
+			if ((CHURCH_BLOCK_ANGLE * i >= CHURCH_FRONT_SPACE_ALPHA) &&
+				(CHURCH_BLOCK_ANGLE * i <= CHURCH_FRONT_SPACE_BETA) &&
+				CHURCH_BLOCK_HEIGHT * j <= CHURCH_FRONT_SPACE_HEIGHT)
+				continue;
+
 			auto blockRitem = std::make_unique<RenderItem>();
-			XMStoreFloat4x4(&blockRitem->World, XMMatrixRotationY(CHURCH_BLOCK_ANGLE * i) *
-				XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * j, 0.0f));
+			XMStoreFloat4x4(&blockRitem->World, SRT);
 			XMStoreFloat4x4(&blockRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 			blockRitem->ObjCBIndex = g_ObjCBIndex++;
 			blockRitem->Geo = geometries["churchGeo"].get();
@@ -168,9 +181,16 @@ void Church::BuildRenderItems_Roof(std::unordered_map<std::string, std::unique_p
 
 		for (int i = 0; i < CHURCH_H_BLOCK_COUNT; ++i)
 		{
+			XMMATRIX SRT = XMMatrixRotationY(CHURCH_BLOCK_ANGLE * i + CHURCH_BLOCK_ANGLE / 2) *
+				XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * (j + 1), 0.0f);
+
+			if ((CHURCH_BLOCK_ANGLE * i + CHURCH_BLOCK_ANGLE / 2 >= CHURCH_FRONT_SPACE_ALPHA) &&
+				(CHURCH_BLOCK_ANGLE * i <= CHURCH_FRONT_SPACE_BETA) &&
+				CHURCH_BLOCK_HEIGHT * (j + 1) <= CHURCH_FRONT_SPACE_HEIGHT)
+				continue;
+
 			auto blockRitem = std::make_unique<RenderItem>();
-			XMStoreFloat4x4(&blockRitem->World, XMMatrixRotationY(CHURCH_BLOCK_ANGLE * i + CHURCH_BLOCK_ANGLE / 2) *
-				XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * (j + 1), 0.0f));
+			XMStoreFloat4x4(&blockRitem->World, SRT);
 			XMStoreFloat4x4(&blockRitem->TexTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 			blockRitem->ObjCBIndex = g_ObjCBIndex++;
 			blockRitem->Geo = geometries["churchGeo"].get();
