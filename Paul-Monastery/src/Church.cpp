@@ -140,8 +140,7 @@ void Church::BuildGeometry(ID3D12Device* devicePtr,
 	geometries[geo->Name] = std::move(geo);
 }
 
-void Church::BuildRenderItems(std::unordered_map<std::string,
-	std::unique_ptr<MeshGeometry>>&geometries,
+void Church::BuildRenderItems_Roof(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& geometries,
 	std::unordered_map<std::string, std::unique_ptr<Material>>& materials,
 	std::vector<std::unique_ptr<RenderItem>>& allRitems,
 	std::vector<RenderItem*>& opaqueRenderItems)
@@ -185,7 +184,13 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 			allRitems.push_back(std::move(blockRitem));
 		}
 	}
-	
+}
+
+void Church::BuildRenderItems_Wall(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& geometries,
+	std::unordered_map<std::string, std::unique_ptr<Material>>& materials,
+	std::vector<std::unique_ptr<RenderItem>>& allRitems,
+	std::vector<RenderItem*>& opaqueRenderItems)
+{
 	// add Dome object
 	auto domeRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&domeRitem->World, XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * CHURCH_V_BLOCK_COUNT, 0.0f));
@@ -220,7 +225,7 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 	for (int i = 0; i < 4; ++i)
 	{
 		auto domeSectorRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&domeSectorRitem->World, XMMatrixTranslation(0.0f, -CHURCH_DOME_SECTOR_THICKNESS / 2, 0.0f)  *
+		XMStoreFloat4x4(&domeSectorRitem->World, XMMatrixTranslation(0.0f, -CHURCH_DOME_SECTOR_THICKNESS / 2, 0.0f) *
 			XMMatrixRotationX(-XM_PIDIV2) *
 			XMMatrixRotationY(XM_PIDIV2 * i) *
 			XMMatrixTranslation(0.0f, CHURCH_BLOCK_HEIGHT * CHURCH_V_BLOCK_COUNT, 0.0f));
@@ -236,4 +241,15 @@ void Church::BuildRenderItems(std::unordered_map<std::string,
 		opaqueRenderItems.push_back(domeSectorRitem.get());
 		allRitems.push_back(std::move(domeSectorRitem));
 	}
+}
+
+
+void Church::BuildRenderItems(std::unordered_map<std::string,
+	std::unique_ptr<MeshGeometry>>&geometries,
+	std::unordered_map<std::string, std::unique_ptr<Material>>& materials,
+	std::vector<std::unique_ptr<RenderItem>>& allRitems,
+	std::vector<RenderItem*>& opaqueRenderItems)
+{
+	BuildRenderItems_Wall(geometries, materials, allRitems, opaqueRenderItems);
+	BuildRenderItems_Roof(geometries, materials, allRitems, opaqueRenderItems);
 }
